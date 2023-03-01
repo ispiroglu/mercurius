@@ -1,0 +1,1 @@
+This layer facilitates communication between different services and a message broker.
