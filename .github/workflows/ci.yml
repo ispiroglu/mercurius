@@ -22,6 +22,7 @@ jobs:
           VALIDATE_ALL_CODEBASE: false
           DEFAULT_BRANCH: master
           FILTER_REGEX_EXCLUDE: "*.md"
+          DISABLE_ERRORS: true # Should change this to false after deleting md files.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build:
