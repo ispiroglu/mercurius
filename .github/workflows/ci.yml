@@ -17,13 +17,15 @@ jobs:
           fetch-depth: 0
 
       - name: Lint Code Base
-        uses: github/super-linter@v4
+        uses: github/super-linter/slim@v4
         env:
           VALIDATE_ALL_CODEBASE: false
           DEFAULT_BRANCH: master
+          FILTER_REGEX_EXCLUDE: *.md
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build:
+    needs: lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -39,20 +41,3 @@ jobs:
 # We should have test controls.
 #      - name: Test
 #        run: go test -v ./...
-
-  check-todos:
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout to branch
-        uses: actions/checkout@v3
-
-      - name: Create TODO
-        uses: atlassian/gajira-todo@v3
-        with:
-          project: MEC
-          issuetype: Task
-          description: Created automatically via GitHub Actions
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
