@@ -1,0 +1,3 @@
+- Implement the message broker using Golang
+- Utilize gRPC with bi-directional streams for efficient communication
+- Containerize the application using Docker for easy deployment and scalability.
