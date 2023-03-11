@@ -18,12 +18,8 @@ jobs:
 
       - name: Lint Code Base
         uses: github/super-linter/slim@v4
-        env:
-          VALIDATE_ALL_CODEBASE: false
-          DEFAULT_BRANCH: master
-          FILTER_REGEX_EXCLUDE: "*.md"
-          DISABLE_ERRORS: true # Should change this to false after deleting md files.
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
 
   build:
     needs: linter
