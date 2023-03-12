@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+option go_package = "./proto";
+
+message Event {
+  string UUID = 1;
+  bytes Payload = 2;
+}
+
+message EventResponse {
+  bool ack = 1;
+}
+
+service EventService {
+  rpc Post(Event) returns (EventResponse) {}
+  rpc PostStream(stream Event) returns (stream EventResponse) {}
+}
