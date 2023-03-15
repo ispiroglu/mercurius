@@ -18,37 +18,37 @@ import (
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
-// BrokerClient is the client API for Broker service.
+// MercuriusClient is the client API for Mercurius service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type BrokerClient interface {
+type MercuriusClient interface {
 	Publish(ctx context.Context, in *Event, opts ...grpc.CallOption) (*ACK, error)
-	Subscribe(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (Broker_SubscribeClient, error)
+	Subscribe(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (Mercurius_SubscribeClient, error)
 }
 
-type brokerClient struct {
+type mercuriusClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewBrokerClient(cc grpc.ClientConnInterface) BrokerClient {
-	return &brokerClient{cc}
+func NewMercuriusClient(cc grpc.ClientConnInterface) MercuriusClient {
+	return &mercuriusClient{cc}
 }
 
-func (c *brokerClient) Publish(ctx context.Context, in *Event, opts ...grpc.CallOption) (*ACK, error) {
+func (c *mercuriusClient) Publish(ctx context.Context, in *Event, opts ...grpc.CallOption) (*ACK, error) {
 	out := new(ACK)
-	err := c.cc.Invoke(ctx, "/proto.Broker/Publish", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto.Mercurius/Publish", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *brokerClient) Subscribe(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (Broker_SubscribeClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Broker_ServiceDesc.Streams[0], "/proto.Broker/Subscribe", opts...)
+func (c *mercuriusClient) Subscribe(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (Mercurius_SubscribeClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Mercurius_ServiceDesc.Streams[0], "/proto.Mercurius/Subscribe", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &brokerSubscribeClient{stream}
+	x := &mercuriusSubscribeClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -58,16 +58,16 @@ func (c *brokerClient) Subscribe(ctx context.Context, in *SubscribeRequest, opts
 	return x, nil
 }
 
-type Broker_SubscribeClient interface {
+type Mercurius_SubscribeClient interface {
 	Recv() (*Event, error)
 	grpc.ClientStream
 }
 
-type brokerSubscribeClient struct {
+type mercuriusSubscribeClient struct {
 	grpc.ClientStream
 }
 
-func (x *brokerSubscribeClient) Recv() (*Event, error) {
+func (x *mercuriusSubscribeClient) Recv() (*Event, error) {
 	m := new(Event)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -75,93 +75,93 @@ func (x *brokerSubscribeClient) Recv() (*Event, error) {
 	return m, nil
 }
 
-// BrokerServer is the server API for Broker service.
-// All implementations must embed UnimplementedBrokerServer
+// MercuriusServer is the server API for Mercurius service.
+// All implementations must embed UnimplementedMercuriusServer
 // for forward compatibility
-type BrokerServer interface {
+type MercuriusServer interface {
 	Publish(context.Context, *Event) (*ACK, error)
-	Subscribe(*SubscribeRequest, Broker_SubscribeServer) error
-	mustEmbedUnimplementedBrokerServer()
+	Subscribe(*SubscribeRequest, Mercurius_SubscribeServer) error
+	mustEmbedUnimplementedMercuriusServer()
 }
 
-// UnimplementedBrokerServer must be embedded to have forward compatible implementations.
-type UnimplementedBrokerServer struct {
+// UnimplementedMercuriusServer must be embedded to have forward compatible implementations.
+type UnimplementedMercuriusServer struct {
 }
 
-func (UnimplementedBrokerServer) Publish(context.Context, *Event) (*ACK, error) {
+func (UnimplementedMercuriusServer) Publish(context.Context, *Event) (*ACK, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Publish not implemented")
 }
-func (UnimplementedBrokerServer) Subscribe(*SubscribeRequest, Broker_SubscribeServer) error {
+func (UnimplementedMercuriusServer) Subscribe(*SubscribeRequest, Mercurius_SubscribeServer) error {
 	return status.Errorf(codes.Unimplemented, "method Subscribe not implemented")
 }
-func (UnimplementedBrokerServer) mustEmbedUnimplementedBrokerServer() {}
+func (UnimplementedMercuriusServer) mustEmbedUnimplementedMercuriusServer() {}
 
-// UnsafeBrokerServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to BrokerServer will
+// UnsafeMercuriusServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to MercuriusServer will
 // result in compilation errors.
-type UnsafeBrokerServer interface {
-	mustEmbedUnimplementedBrokerServer()
+type UnsafeMercuriusServer interface {
+	mustEmbedUnimplementedMercuriusServer()
 }
 
-func RegisterBrokerServer(s grpc.ServiceRegistrar, srv BrokerServer) {
-	s.RegisterService(&Broker_ServiceDesc, srv)
+func RegisterMercuriusServer(s grpc.ServiceRegistrar, srv MercuriusServer) {
+	s.RegisterService(&Mercurius_ServiceDesc, srv)
 }
 
-func _Broker_Publish_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Mercurius_Publish_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Event)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(BrokerServer).Publish(ctx, in)
+		return srv.(MercuriusServer).Publish(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.Broker/Publish",
+		FullMethod: "/proto.Mercurius/Publish",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BrokerServer).Publish(ctx, req.(*Event))
+		return srv.(MercuriusServer).Publish(ctx, req.(*Event))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Broker_Subscribe_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _Mercurius_Subscribe_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(SubscribeRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(BrokerServer).Subscribe(m, &brokerSubscribeServer{stream})
+	return srv.(MercuriusServer).Subscribe(m, &mercuriusSubscribeServer{stream})
 }
 
-type Broker_SubscribeServer interface {
+type Mercurius_SubscribeServer interface {
 	Send(*Event) error
 	grpc.ServerStream
 }
 
-type brokerSubscribeServer struct {
+type mercuriusSubscribeServer struct {
 	grpc.ServerStream
 }
 
-func (x *brokerSubscribeServer) Send(m *Event) error {
+func (x *mercuriusSubscribeServer) Send(m *Event) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-// Broker_ServiceDesc is the grpc.ServiceDesc for Broker service.
+// Mercurius_ServiceDesc is the grpc.ServiceDesc for Mercurius service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var Broker_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "proto.Broker",
-	HandlerType: (*BrokerServer)(nil),
+var Mercurius_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "proto.Mercurius",
+	HandlerType: (*MercuriusServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "Publish",
-			Handler:    _Broker_Publish_Handler,
+			Handler:    _Mercurius_Publish_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "Subscribe",
-			Handler:       _Broker_Subscribe_Handler,
+			Handler:       _Mercurius_Subscribe_Handler,
 			ServerStreams: true,
 		},
 	},

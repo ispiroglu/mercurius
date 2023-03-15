@@ -1,19 +1,16 @@
 package broker
 
 import (
-	"context"
 	pb "github.com/ispiroglu/mercurius/proto"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"log"
 )
 
+// Broker TODO: Should we have broker interface instead of struct?
 type Broker struct {
 	TopicRepository
-	pb.UnimplementedBrokerServer
 }
 
-func (b *Broker) Publish(ctx context.Context, event *pb.Event) (*pb.ACK, error) {
+func (b *Broker) Publish(event *pb.Event) (*pb.ACK, error) {
 	log.Println("Publishing event: ", event.Topic)
 
 	topic, err := b.GetTopic(event.Topic)
@@ -26,6 +23,7 @@ func (b *Broker) Publish(ctx context.Context, event *pb.Event) (*pb.ACK, error) 
 	return &pb.ACK{}, nil
 }
 
-func (b *Broker) Subscribe(*pb.SubscribeRequest, pb.Broker_SubscribeServer) error {
-	return status.Errorf(codes.Unimplemented, "method Subscribe not implemented")
+// Subscribe Who is the subscriber? How to handle fanouts??
+func (b *Broker) Subscribe(topic string) (<-chan pb.Event, error) {
+	return nil, nil
 }

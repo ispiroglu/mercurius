@@ -18,13 +18,14 @@ message Event {
 
 message SubscribeRequest {
   string subscriberID = 1;
-  string topic = 2;
-  google.protobuf.Timestamp createdAt = 3;
+  string subscriberName = 2;
+  string topic = 3;
+  google.protobuf.Timestamp createdAt = 4;
 }
 
 message ACK {}
 
-service Broker {
+service Mercurius {
   rpc Publish (Event) returns (ACK);
   rpc Subscribe (SubscribeRequest) returns (stream Event);
 }
