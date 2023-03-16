@@ -37,6 +37,11 @@ jobs:
   issuer:
     runs-on: "ubuntu-latest"
     steps:
-      - uses: "actions/checkout@v3"
-      - name: "TODO to Issue"
-        uses: "alstr/todo-to-issue-action@v4"
+      - name: Create TODO
+        uses: atlassian/gajira-todo@v3
+        with:
+          project: MC
+          issuetype: Task
+          description: Created automatically via GitHub Actions
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
