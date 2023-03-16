@@ -1,6 +1,8 @@
 package broker
 
 import (
+	"context"
+	"fmt"
 	"github.com/ispiroglu/mercurius/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -51,18 +53,30 @@ func (r *TopicRepository) CreateTopic(name string) (*Topic, error) {
 	return createdTopic, nil
 }
 
-func newTopic(name string) *Topic {
-	return &Topic{
-		Name:        name,
-		Subscribers: map[string]*Subscriber{},
-		EventChan:   make(chan *proto.Event), // TODO: Should this be buffered? Or should we consider asynchrony in upper layer?
-	}
-}
-
 func (t *Topic) PublishEvent(event *proto.Event) { // TODO: Should we pass pointer or copy of event
 	// TODO: What else need to be done for Publishing at Topic Level?
 
 	t.Lock() // TODO: Do we need Lock? Or different layers of Lock? RW LOCK??
 	t.EventChan <- event
 	t.Unlock()
+}
+
+func (t *Topic) AddSubscriber(ctx context.Context, id string) error {
+	t.Lock()
+	if t.Subscribers[id] != nil {
+		errorMessage := fmt.Sprintf("This subscriber: %s is alreay added to this topic: %s\n", id, t.Name)
+		return status.Error(codes.AlreadyExists, errorMessage)
+	}
+
+	t.Subscribers[id] = NewSubscriber(ctx, id)
+	t.Unlock()
+	return nil
+}
+
+func newTopic(name string) *Topic {
+	return &Topic{
+		Name:        name,
+		Subscribers: map[string]*Subscriber{},
+		EventChan:   make(chan *proto.Event), // TODO: Should this be buffered? Or should we consider asynchrony in upper layer?
+	}
 }

@@ -1,6 +1,7 @@
 package broker
 
 import (
+	"context"
 	pb "github.com/ispiroglu/mercurius/proto"
 	"log"
 )
@@ -24,6 +25,17 @@ func (b *Broker) Publish(event *pb.Event) (*pb.ACK, error) {
 }
 
 // Subscribe Who is the subscriber? How to handle fanouts??
-func (b *Broker) Subscribe(topic string) (<-chan pb.Event, error) {
-	return nil, nil
+func (b *Broker) Subscribe(ctx context.Context, topic string, sId string) (<-chan pb.Event, error) {
+	t, err := b.GetTopic(topic)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	if err := t.AddSubscriber(ctx, sId); err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	return t.Subscribers[sId].EventChannel, nil
 }
