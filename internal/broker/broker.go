@@ -25,7 +25,7 @@ func (b *Broker) Publish(event *pb.Event) (*pb.ACK, error) {
 }
 
 // Subscribe Who is the subscriber? How to handle fanouts??
-func (b *Broker) Subscribe(ctx context.Context, topic string, sId string) (<-chan pb.Event, error) {
+func (b *Broker) Subscribe(ctx context.Context, topic string, sId string) (<-chan *pb.Event, error) {
 	t, err := b.GetTopic(topic)
 	if err != nil {
 		log.Println(err)

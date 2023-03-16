@@ -34,8 +34,10 @@ func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_S
 	// TODO: Should we run this for block in a goroutine?
 	for {
 		event := <-c
-		if err := stream.Send(&event); err != nil {
+
+		if err := stream.Send(event); err != nil {
 			log.Printf("Cannot send event from topic: %s to subscriber: %s - %s \n", event.Topic, req.SubscriberName, req.SubscriberID)
+			break // TODO: Should change this to a done channel or error channel !
 		}
 		log.Printf("Sent event from topic: %s to subscriber: %s - %s \n", event.Topic, req.SubscriberName, req.SubscriberID)
 	}
