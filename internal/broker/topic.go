@@ -3,10 +3,11 @@ package broker
 import (
 	"context"
 	"fmt"
+	"sync"
+
 	"github.com/ispiroglu/mercurius/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"sync"
 )
 
 type Topic struct {
@@ -28,11 +29,12 @@ func NewTopicRepository() *TopicRepository {
 }
 
 func (r *TopicRepository) GetTopic(name string) (*Topic, error) {
-	r.RLock()
-	defer r.RUnlock()
+	//r.RLock()
+	//defer r.RUnlock()
 
 	topic, exist := r.Topics[name]
 	if !exist {
+		//r.RUnlock()
 		return nil, status.Error(codes.NotFound, "cannot found the topic called:"+name)
 	}
 
@@ -40,11 +42,12 @@ func (r *TopicRepository) GetTopic(name string) (*Topic, error) {
 }
 
 func (r *TopicRepository) CreateTopic(name string) (*Topic, error) {
-	r.Lock()
-	defer r.Unlock()
+	//r.Lock()
+	//defer r.Unlock()
 
 	_, err := r.GetTopic(name)
 	if err == nil {
+		//r.Unlock()
 		return nil, status.Error(codes.AlreadyExists, "there is already a topic named:"+name)
 	}
 
@@ -77,6 +80,6 @@ func newTopic(name string) *Topic {
 	return &Topic{
 		Name:        name,
 		Subscribers: map[string]*Subscriber{},
-		EventChan:   make(chan *proto.Event), // TODO: Should this be buffered? Or should we consider asynchrony in upper layer?
-	}
+		EventChan:   make(chan *proto.Event, 70), // TODO: Should this be buffered? Or should we consider asynchrony in upper layer?
+	} // UNLESS BUFFERED THATS GIVING ERRORS
 }

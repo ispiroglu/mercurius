@@ -2,14 +2,21 @@ package server
 
 import (
 	"context"
+	"log"
+
 	"github.com/ispiroglu/mercurius/internal/broker"
 	"github.com/ispiroglu/mercurius/proto"
-	"log"
 )
 
 type Server struct {
-	broker broker.Broker
+	broker *broker.Broker
 	proto.UnimplementedMercuriusServer
+}
+
+func NewMercuriusServer() *Server {
+	return &Server{
+		broker: broker.NewBroker(),
+	}
 }
 
 // Publish TODO: Why are we abstracting the publishing at server level and broker level??
@@ -32,14 +39,16 @@ func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_S
 	// TODO: Who is the subscriber? How to handle fan outs??
 	// TODO: How to implement done channel? Should we implement?
 	// TODO: Should we run this for block in a goroutine?
-	for {
-		event := <-c
+	go func() {
+		for {
+			event := <-c
 
-		if err := stream.Send(event); err != nil {
-			log.Printf("Cannot send event from topic: %s to subscriber: %s - %s \n", event.Topic, req.SubscriberName, req.SubscriberID)
-			break // TODO: Should change this to a done channel or error channel !
+			if err := stream.Send(event); err != nil {
+				log.Printf("Cannot send event from topic: %s to subscriber: %s - %s \n", event.Topic, req.SubscriberName, req.SubscriberID)
+				break // TODO: Should change this to a done channel or error channel !
+			}
+			log.Printf("Sent event from topic: %s to subscriber: %s - %s \n", event.Topic, req.SubscriberName, req.SubscriberID)
 		}
-		log.Printf("Sent event from topic: %s to subscriber: %s - %s \n", event.Topic, req.SubscriberName, req.SubscriberID)
-	}
+	}()
 	return nil
 }

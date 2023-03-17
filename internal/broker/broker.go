@@ -2,13 +2,20 @@ package broker
 
 import (
 	"context"
-	pb "github.com/ispiroglu/mercurius/proto"
 	"log"
+
+	pb "github.com/ispiroglu/mercurius/proto"
 )
 
 // Broker TODO: Should we have broker interface instead of struct?
 type Broker struct {
-	TopicRepository
+	*TopicRepository
+}
+
+func NewBroker() *Broker {
+	return &Broker{
+		TopicRepository: NewTopicRepository(),
+	}
 }
 
 func (b *Broker) Publish(event *pb.Event) (*pb.ACK, error) {
@@ -17,7 +24,11 @@ func (b *Broker) Publish(event *pb.Event) (*pb.ACK, error) {
 	topic, err := b.GetTopic(event.Topic)
 	if err != nil {
 		log.Println(err)
-		return nil, err
+		log.Println("Creating new topic at Publish Level!")
+		topic, err = b.CreateTopic(event.Topic)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	topic.PublishEvent(event)
