@@ -3,7 +3,7 @@ package broker
 import (
 	"context"
 	"fmt"
-	proto2 "github.com/golang/protobuf/proto"
+	proto2 "google.golang.org/protobuf/proto"
 	"sync"
 
 	"github.com/ispiroglu/mercurius/proto"

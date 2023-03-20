@@ -35,12 +35,9 @@ func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_S
 	// TODO: How to implement done channel? Should we implement?
 	// TODO: Should we run this for block in a goroutine? -> !This gives an error! Why
 ForScope:
-	for {
-		select {
-		case event := <-c:
-			if err := stream.Send(event); err != nil {
-				break ForScope // TODO: Should change this to a done channel or error channel !
-			}
+	for event := range c {
+		if err := stream.Send(event); err != nil {
+			break ForScope // TODO: Should change this to a done channel or error channel !
 		}
 	}
 
