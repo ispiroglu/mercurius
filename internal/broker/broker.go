@@ -2,8 +2,6 @@ package broker
 
 import (
 	"context"
-	"log"
-
 	pb "github.com/ispiroglu/mercurius/proto"
 )
 
@@ -19,12 +17,8 @@ func NewBroker() *Broker {
 }
 
 func (b *Broker) Publish(event *pb.Event) (*pb.ACK, error) {
-	log.Println("Publishing event: ", event.Topic)
-
 	topic, err := b.GetTopic(event.Topic)
 	if err != nil {
-		log.Println(err)
-		log.Println("Creating new topic at Publish Level!")
 		topic, err = b.CreateTopic(event.Topic)
 		if err != nil {
 			return nil, err
@@ -39,12 +33,13 @@ func (b *Broker) Publish(event *pb.Event) (*pb.ACK, error) {
 func (b *Broker) Subscribe(ctx context.Context, topic string, sId string) (<-chan *pb.Event, error) {
 	t, err := b.GetTopic(topic)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		t, err = b.CreateTopic(topic)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if err := t.AddSubscriber(ctx, sId); err != nil {
-		log.Println(err)
 		return nil, err
 	}
 

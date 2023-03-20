@@ -3,6 +3,7 @@ package broker
 import (
 	"context"
 	"fmt"
+	proto2 "github.com/golang/protobuf/proto"
 	"sync"
 
 	"github.com/ispiroglu/mercurius/proto"
@@ -29,12 +30,8 @@ func NewTopicRepository() *TopicRepository {
 }
 
 func (r *TopicRepository) GetTopic(name string) (*Topic, error) {
-	//r.RLock()
-	//defer r.RUnlock()
-
 	topic, exist := r.Topics[name]
 	if !exist {
-		//r.RUnlock()
 		return nil, status.Error(codes.NotFound, "cannot found the topic called:"+name)
 	}
 
@@ -42,8 +39,8 @@ func (r *TopicRepository) GetTopic(name string) (*Topic, error) {
 }
 
 func (r *TopicRepository) CreateTopic(name string) (*Topic, error) {
-	//r.Lock()
-	//defer r.Unlock()
+	r.Lock()
+	defer r.Unlock()
 
 	_, err := r.GetTopic(name)
 	if err == nil {
@@ -60,19 +57,23 @@ func (t *Topic) PublishEvent(event *proto.Event) { // TODO: Should we pass point
 	// TODO: What else need to be done for Publishing at Topic Level?
 
 	t.Lock() // TODO: Do we need Lock? Or different layers of Lock? RW LOCK??
-	t.EventChan <- event
+	// What if there are no subscriber at that time?
+	for _, x := range t.Subscribers {
+		newEvent := proto2.Clone(event).(*proto.Event)
+		x.EventChannel <- newEvent
+	}
 	t.Unlock()
 }
 
 func (t *Topic) AddSubscriber(ctx context.Context, id string) error {
 	t.Lock()
+	defer t.Unlock()
 	if t.Subscribers[id] != nil {
 		errorMessage := fmt.Sprintf("This subscriber: %s is alreay added to this topic: %s\n", id, t.Name)
 		return status.Error(codes.AlreadyExists, errorMessage)
 	}
 
 	t.Subscribers[id] = NewSubscriber(ctx, id)
-	t.Unlock()
 	return nil
 }
 
