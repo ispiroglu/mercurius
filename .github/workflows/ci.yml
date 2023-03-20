@@ -17,6 +17,8 @@ jobs:
           fetch-depth: 0
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.51.2
 
   build:
     needs: linter
