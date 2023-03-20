@@ -45,7 +45,7 @@ func main() {
 	go func() {
 		count := 0
 		for ; count < 250; count++ {
-
+			time.Sleep(2 * time.Second)
 			_, err := c.Publish(context.Background(), event)
 			if err != nil {
 				log.Println("Cannot publish event")

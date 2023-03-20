@@ -1,7 +1,8 @@
 package main
 
 import (
-	"log"
+	"github.com/ispiroglu/mercurius/internal/logger"
+	"go.uber.org/zap"
 	"net"
 
 	sv "github.com/ispiroglu/mercurius/internal/server"
@@ -12,12 +13,14 @@ import (
 const ADDR = "0.0.0.0:9000"
 const TCP = "tcp"
 
+var log = logger.NewLogger()
+
 func main() {
 	list, err := net.Listen(TCP, ADDR)
 	if err != nil {
-		log.Fatalf("Cannout listen %s on %s: %v", TCP, ADDR, err)
+		log.Fatal("Cannot listen", zap.String("TCP", TCP), zap.String("ADDR", ADDR), zap.Error(err))
 	}
-	log.Printf("Listening %s on %s", TCP, ADDR)
+	log.Info("Listening")
 
 	grpcServer := grpc.NewServer()
 	server := sv.NewMercuriusServer()
@@ -25,6 +28,6 @@ func main() {
 	proto.RegisterMercuriusServer(grpcServer, server)
 
 	if err := grpcServer.Serve(list); err != nil {
-		log.Fatalf("Failed to serve %v", err)
+		log.Fatal("Failed to serve", zap.Error(err))
 	}
 }
