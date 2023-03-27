@@ -34,17 +34,18 @@ func main() {
 		log.Println("Cannot encode event body")
 	}
 
-	event := &proto.Event{
-		Id:        "ID",
-		Topic:     TopicName,
-		Body:      eventBody,
-		CreatedAt: timestamppb.Now(),
-		ExpiresAt: 1232,
-	}
-
 	go func() {
-		count := 0
+		count := 1
+
 		for ; count < 250; count++ {
+			event := &proto.Event{
+				Id:        "ID",
+				Topic:     TopicName,
+				Body:      eventBody,
+				CreatedAt: timestamppb.Now(),
+				ExpiresAt: uint32(count),
+			}
+
 			time.Sleep(2 * time.Second)
 			_, err := c.Publish(context.Background(), event)
 			if err != nil {

@@ -7,10 +7,14 @@ import (
 	"go.uber.org/zap"
 )
 
-// Broker TODO: Should we have broker interface instead of struct?
 type Broker struct {
 	logger *zap.Logger
 	*TopicRepository
+}
+
+type IBroker interface {
+	Publish(event *pb.Event) (*pb.ACK, error)
+	Subscribe(ctx context.Context, topic string, sId string, sName string) (<-chan *pb.Event, error)
 }
 
 func NewBroker() *Broker {
@@ -36,7 +40,6 @@ func (b *Broker) Publish(event *pb.Event) (*pb.ACK, error) {
 	return &pb.ACK{}, nil
 }
 
-// Subscribe Who is the subscriber? How to handle fanouts??
 func (b *Broker) Subscribe(ctx context.Context, topic string, sId string, sName string) (<-chan *pb.Event, error) {
 	b.logger.Info("Broker received subscription request", zap.String("Topic", topic), zap.String("SubscriberID", sId))
 	t, err := b.GetTopic(topic)

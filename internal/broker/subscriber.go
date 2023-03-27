@@ -13,8 +13,8 @@ type Subscriber struct {
 	logger       *zap.Logger
 	Id           string
 	Name         string
-	EventChannel chan *proto.Event // Should this attribte be pointer or not?
-	Ctx          context.Context   // TODO: What to do with this?
+	EventChannel chan *proto.Event
+	Ctx          context.Context // TODO: What to do with this?
 }
 
 // NewSubscriber Should we handle the channel buffer size here or get at register level?
