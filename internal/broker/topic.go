@@ -27,6 +27,13 @@ type TopicRepository struct {
 	Topics map[string]*Topic
 }
 
+type ITopicRepository interface {
+	GetTopic(string) (*Topic, error)
+	CreateTopic(string) (*Topic, error)
+	PublishEvent(*proto.Event)
+	AddSubscriber(context.Context, string, string) error
+}
+
 func NewTopicRepository() *TopicRepository {
 	return &TopicRepository{
 		logger: logger.NewLogger(),
@@ -60,15 +67,19 @@ func (r *TopicRepository) CreateTopic(name string) (*Topic, error) {
 	return createdTopic, nil
 }
 
-func (t *Topic) PublishEvent(event *proto.Event) { // TODO: Should we pass pointer or copy of event
+func (t *Topic) PublishEvent(event *proto.Event) {
 	// TODO: What else need to be done for Publishing at Topic Level?
-	t.Lock() // TODO: Do we need Lock? Or different layers of Lock? RW LOCK??
-	defer t.Unlock()
-	// What if there are no subscriber at that time?
-	for _, x := range t.Subscribers {
-		x.logger.Info("Sending event to subscriber", zap.String("Topic", event.Topic), zap.String("SubscriberID", x.Id), zap.String("Subscriber name", x.Name))
-		newEvent := proto2.Clone(event).(*proto.Event) // TODO: Change ID of event
-		x.EventChannel <- newEvent
+	if len(t.Subscribers) == 0 {
+		t.logger.Info("There is no subscriber at this time. Publishing the event to event channel!", zap.String("Topic Name", t.Name))
+		t.EventChan <- proto2.Clone(event).(*proto.Event) // Do we need this cloning?
+	} else {
+		go func() {
+			for _, x := range t.Subscribers {
+				x.logger.Info("Sending event to subscriber", zap.String("Topic", event.Topic), zap.String("SubscriberID", x.Id), zap.String("Subscriber name", x.Name))
+				newEvent := proto2.Clone(event).(*proto.Event) // TODO: Change ID of event
+				x.EventChannel <- newEvent
+			}
+		}()
 	}
 }
 
@@ -81,7 +92,15 @@ func (t *Topic) AddSubscriber(ctx context.Context, id string, name string) error
 		return status.Error(codes.AlreadyExists, errorMessage)
 	}
 
-	t.Subscribers[id] = NewSubscriber(ctx, id, name)
+	s := NewSubscriber(ctx, id, name)
+	t.Subscribers[id] = s
+
+	go func() {
+		for event := range t.EventChan {
+			s.logger.Info("Sending event to subscriber", zap.String("Topic", event.Topic), zap.String("SubscriberID", s.Id), zap.String("Subscriber name", s.Name))
+			s.EventChannel <- event
+		}
+	}()
 	return nil
 }
 
