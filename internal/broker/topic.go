@@ -73,35 +73,45 @@ func (t *Topic) PublishEvent(event *proto.Event) {
 		t.logger.Info("There is no subscriber at this time. Publishing the event to event channel!", zap.String("Topic Name", t.Name))
 		t.EventChan <- proto2.Clone(event).(*proto.Event) // Do we need this cloning?
 	} else {
-		go func() {
-			for _, x := range t.Subscribers {
-				x.logger.Info("Sending event to subscriber", zap.String("Topic", event.Topic), zap.String("SubscriberID", x.Id), zap.String("Subscriber name", x.Name))
-				newEvent := proto2.Clone(event).(*proto.Event) // TODO: Change ID of event
-				x.EventChannel <- newEvent
-			}
-		}()
+		t.logger.Info("", zap.Int("Count", len(t.Subscribers)))
+		for _, s := range t.Subscribers {
+			go func(s *Subscriber, event *proto.Event) {
+				s.logger.Info("Sending event to subscriber", zap.String("Topic", event.Topic), zap.String("SubscriberID", s.Id), zap.String("Subscriber name", s.Name))
+				s.EventChannel <- event
+			}(s, proto2.Clone(event).(*proto.Event))
+		}
 	}
 }
 
-func (t *Topic) AddSubscriber(ctx context.Context, id string, name string) error {
-	t.Lock()
-	defer t.Unlock()
+func (t *Topic) AddSubscriber(ctx context.Context, id string, name string) (<-chan *proto.Event, error) {
+	t.logger.Info("", zap.String("0", name))
+
+	t.logger.Info("", zap.String("1", name))
 	if t.Subscribers[id] != nil {
 		t.logger.Error("Could not add already existing subscriber to topic", zap.String("Topic", t.Name), zap.String("SubscriberID", id), zap.String("Subscriber name", name))
 		errorMessage := fmt.Sprintf("This subscriber: %s is alreay added to this topic: %s\n", id, t.Name)
-		return status.Error(codes.AlreadyExists, errorMessage)
+		return nil, status.Error(codes.AlreadyExists, errorMessage)
+	}
+	t.logger.Info("", zap.String("2", name))
+
+	t.logger.Info("Adding Subscriber", zap.String("sName", name))
+	s := NewSubscriber(ctx, id, name)
+	t.Lock()
+	t.logger.Info("", zap.String("3", name))
+	t.Subscribers[id] = s
+	t.Unlock()
+	if len(t.Subscribers) == 1 {
+		go func() {
+			t.Lock()
+			defer t.Unlock()
+			for event := range t.EventChan {
+				s.logger.Info("Sending event to subscriber", zap.String("Topic", event.Topic), zap.String("SubscriberID", s.Id), zap.String("Subscriber name", s.Name))
+				s.EventChannel <- event
+			}
+		}()
 	}
 
-	s := NewSubscriber(ctx, id, name)
-	t.Subscribers[id] = s
-
-	go func() {
-		for event := range t.EventChan {
-			s.logger.Info("Sending event to subscriber", zap.String("Topic", event.Topic), zap.String("SubscriberID", s.Id), zap.String("Subscriber name", s.Name))
-			s.EventChannel <- event
-		}
-	}()
-	return nil
+	return s.EventChannel, nil
 }
 
 func newTopic(name string) *Topic {

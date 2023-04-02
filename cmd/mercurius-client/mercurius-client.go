@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/google/uuid"
 	"github.com/ispiroglu/mercurius/pkg/serialize"
 	"github.com/ispiroglu/mercurius/proto"
 	"google.golang.org/grpc"
@@ -14,7 +13,7 @@ import (
 )
 
 const ADDR = "0.0.0.0:9000"
-const TopicName = "|USER_CREATED|"
+const TopicName = "SampleTopicName"
 
 // TODO: Create Client Struct!
 func main() {
@@ -34,43 +33,47 @@ func main() {
 		log.Println("Cannot encode event body")
 	}
 
-	go func() {
-		count := 1
+	_ = eventBody
+	//count := 1
 
-		for ; count < 250; count++ {
-			event := &proto.Event{
-				Id:        "ID",
-				Topic:     TopicName,
-				Body:      eventBody,
-				CreatedAt: timestamppb.Now(),
-				ExpiresAt: uint32(count),
-			}
-
-			time.Sleep(2 * time.Second)
-			_, err := c.Publish(context.Background(), event)
-			if err != nil {
-				log.Println("Cannot publish event")
-				log.Println(err)
-			}
-		}
-	}()
+	//for ; count < 20; count++ {
+	//	go func(count int) {
+	//		time.Sleep(1 * time.Second)
+	//		event := &proto.Event{
+	//			Id:        "ID",
+	//			Topic:     TopicName,
+	//			Body:      eventBody,
+	//			CreatedAt: timestamppb.Now(),
+	//			ExpiresAt: uint32(count),
+	//		}
+	//		//time.Sleep(2 * time.Second)
+	//		//fmt.Println(count)
+	//		_, err := c.Publish(context.Background(), event)
+	//		if err != nil {
+	//			log.Println("Cannot publish event")
+	//			log.Println(err)
+	//		}
+	//	}(count)
+	//}
 
 	// SubA Scope
 	{
-		sReqA := &proto.SubscribeRequest{
-			SubscriberID:   uuid.New().String(),
-			SubscriberName: "Sub-A",
-			Topic:          TopicName,
-			CreatedAt:      timestamppb.Now(),
-		}
+		x := 0
+		for ; x < 5; x++ {
+			go func(x int) {
+				n := fmt.Sprintf("Sub%d", x)
+				sReqA := &proto.SubscribeRequest{
+					SubscriberID:   n,
+					SubscriberName: n,
+					Topic:          TopicName,
+					CreatedAt:      timestamppb.Now(),
+				}
 
-		clientA, err := c.Subscribe(context.Background(), sReqA)
-		if err != nil {
-			log.Println(err)
-		}
+				clientA, err := c.Subscribe(context.Background(), sReqA)
+				if err != nil {
+					log.Println(err)
+				}
 
-		go func() {
-			for {
 				event, err := clientA.Recv()
 				if err != nil {
 					log.Println(err)
@@ -79,37 +82,37 @@ func main() {
 
 				// Handle Event!
 				log.Println("Received event on ClientA", event)
-			}
-		}()
+			}(x)
+		}
 	}
 
 	// SubB Scope
-	{
-		sReqB := &proto.SubscribeRequest{
-			SubscriberID:   uuid.New().String(),
-			SubscriberName: "Sub-B",
-			Topic:          TopicName,
-			CreatedAt:      timestamppb.Now(),
-		}
-
-		clientB, err := c.Subscribe(context.Background(), sReqB)
-		if err != nil {
-			log.Println(err)
-		}
-
-		go func() {
-			for {
-				event, err := clientB.Recv()
-				if err != nil {
-					log.Println(err)
-					// TODO: Handle mechanism
-				}
-
-				// Handle Event!
-				log.Println("Received event on ClientB", event)
-			}
-		}()
-	}
+	//{
+	//	sReqB := &proto.SubscribeRequest{
+	//		SubscriberID:   uuid.New().String(),
+	//		SubscriberName: "Sub-B",
+	//		Topic:          TopicName,
+	//		CreatedAt:      timestamppb.Now(),
+	//	}
+	//
+	//	clientB, err := c.Subscribe(context.Background(), sReqB)
+	//	if err != nil {
+	//		log.Println(err)
+	//	}
+	//
+	//	go func() {
+	//		for {
+	//			event, err := clientB.Recv()
+	//			if err != nil {
+	//				log.Println(err)
+	//				// TODO: Handle mechanism
+	//			}
+	//
+	//			// Handle Event!
+	//			log.Println("Received event on ClientB", event)
+	//		}
+	//	}()
+	//}
 
 	time.Sleep(5 * time.Hour)
 }
