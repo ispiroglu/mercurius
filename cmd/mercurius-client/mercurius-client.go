@@ -41,30 +41,32 @@ func main() {
 	_ = eventBody
 	count := 1
 
-	for ; count < 20; count++ {
-		go func(count int) {
-			time.Sleep(1 * time.Second)
-			event := &proto.Event{
-				Id:        "ID",
-				Topic:     TopicName,
-				Body:      eventBody,
-				CreatedAt: timestamppb.Now(),
-				ExpiresAt: uint32(count),
-			}
-			//time.Sleep(2 * time.Second)
-			//fmt.Println(count)
-			_, err := c.Publish(context.Background(), event)
-			if err != nil {
-				log.Println("Cannot publish event")
-				log.Println(err)
-			}
-		}(count)
-	}
+	go func() {
+		//time.Sleep(3 * time.Second)
+		for ; count <= 1000; count++ {
+			go func(count int) {
+				event := &proto.Event{
+					Id:        "ID",
+					Topic:     TopicName,
+					Body:      eventBody,
+					CreatedAt: timestamppb.Now(),
+					ExpiresAt: uint32(count),
+				}
+				//time.Sleep(2 * time.Second)
+				//fmt.Println(count)
+				_, err := c.Publish(context.Background(), event)
+				if err != nil {
+					log.Println("Cannot publish event")
+					log.Println(err)
+				}
+			}(count)
+		}
+	}()
 	a := counter{a: atomic.Int32{}}
 	// SubA Scope
 	{
-		x := 0
-		for ; x < 2500; x++ {
+		x := 1
+		for ; x <= 1000; x++ {
 			go func(x int) {
 				n := fmt.Sprintf("Sub%d", x)
 				sReqA := &proto.SubscribeRequest{
@@ -122,8 +124,8 @@ func main() {
 	//	}()
 	//}
 
-	time.Sleep(15 * time.Second)
+	time.Sleep(60 * time.Second)
 	fmt.Println()
-	fmt.Println(a.a)
+	//fmt.Println(a.a)
 	time.Sleep(5 * time.Hour)
 }

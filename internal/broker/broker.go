@@ -38,9 +38,9 @@ func (b *Broker) Publish(event *pb.Event) (*pb.ACK, error) {
 		if !ok && st.Code() != codes.AlreadyExists {
 			b.logger.Error("Broker cannot create topic", zap.String("Topic", event.Topic), zap.Error(err))
 			return nil, err
+		} else if st.Code() == codes.AlreadyExists {
+			topic, _ = b.GetTopic(event.Topic)
 		}
-
-		topic, _ = b.GetTopic(event.Topic)
 	}
 
 	topic.PublishEvent(event)
@@ -60,9 +60,9 @@ func (b *Broker) Subscribe(ctx context.Context, topicName string, sId string, sN
 		if !ok && st.Code() != codes.AlreadyExists {
 			b.logger.Error("Broker cannot create topic", zap.String("Topic", topicName), zap.Error(err), zap.Bool("A", st.Code() != codes.AlreadyExists), zap.String("Code", st.String()))
 			return nil, err
+		} else if st.Code() == codes.AlreadyExists {
+			t, _ = b.GetTopic(topicName)
 		}
-
-		t, err = b.GetTopic(topicName)
 	}
 
 	ch, err := t.AddSubscriber(ctx, sId, sName)
