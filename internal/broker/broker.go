@@ -7,7 +7,6 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"time"
 )
 
 type Broker struct {
@@ -62,16 +61,10 @@ func (b *Broker) Subscribe(ctx context.Context, topicName string, sId string, sN
 			t, err = b.GetTopic(topicName)
 		}
 	}
-	b.logger.Info("Eklenecegim", zap.String("sName", sName))
 	ch, err := t.AddSubscriber(ctx, sId, sName)
-	b.logger.Info("Ekledim", zap.String("sName", sName))
 	if err != nil {
 		b.logger.Error("Broker could not add subscriber to topic", zap.String("Topic", topicName), zap.String("SubscriberID", sId), zap.Error(err))
 		return nil, err
 	}
-	go func() {
-		time.Sleep(3 * time.Second)
-		b.logger.Info("After Add", zap.Int("Count", len(t.Subscribers)))
-	}()
 	return ch, nil
 }

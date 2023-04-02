@@ -9,11 +9,16 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"log"
+	"sync/atomic"
 	"time"
 )
 
 const ADDR = "0.0.0.0:9000"
 const TopicName = "SampleTopicName"
+
+type counter struct {
+	a atomic.Int32
+}
 
 // TODO: Create Client Struct!
 func main() {
@@ -34,32 +39,32 @@ func main() {
 	}
 
 	_ = eventBody
-	//count := 1
+	count := 1
 
-	//for ; count < 20; count++ {
-	//	go func(count int) {
-	//		time.Sleep(1 * time.Second)
-	//		event := &proto.Event{
-	//			Id:        "ID",
-	//			Topic:     TopicName,
-	//			Body:      eventBody,
-	//			CreatedAt: timestamppb.Now(),
-	//			ExpiresAt: uint32(count),
-	//		}
-	//		//time.Sleep(2 * time.Second)
-	//		//fmt.Println(count)
-	//		_, err := c.Publish(context.Background(), event)
-	//		if err != nil {
-	//			log.Println("Cannot publish event")
-	//			log.Println(err)
-	//		}
-	//	}(count)
-	//}
-
+	for ; count < 20; count++ {
+		go func(count int) {
+			time.Sleep(1 * time.Second)
+			event := &proto.Event{
+				Id:        "ID",
+				Topic:     TopicName,
+				Body:      eventBody,
+				CreatedAt: timestamppb.Now(),
+				ExpiresAt: uint32(count),
+			}
+			//time.Sleep(2 * time.Second)
+			//fmt.Println(count)
+			_, err := c.Publish(context.Background(), event)
+			if err != nil {
+				log.Println("Cannot publish event")
+				log.Println(err)
+			}
+		}(count)
+	}
+	a := counter{a: atomic.Int32{}}
 	// SubA Scope
 	{
 		x := 0
-		for ; x < 5; x++ {
+		for ; x < 2500; x++ {
 			go func(x int) {
 				n := fmt.Sprintf("Sub%d", x)
 				sReqA := &proto.SubscribeRequest{
@@ -74,14 +79,17 @@ func main() {
 					log.Println(err)
 				}
 
-				event, err := clientA.Recv()
-				if err != nil {
-					log.Println(err)
-					// TODO: Handle mechanism
-				}
+				for {
+					event, err := clientA.Recv()
+					if err != nil {
+						log.Println(err)
+						// TODO: Handle mechanism
+					}
 
-				// Handle Event!
-				log.Println("Received event on ClientA", event)
+					// Handle Event!
+					log.Println("Received event on", sReqA.SubscriberID, event)
+					a.a.Add(1)
+				}
 			}(x)
 		}
 	}
@@ -114,5 +122,8 @@ func main() {
 	//	}()
 	//}
 
+	time.Sleep(15 * time.Second)
+	fmt.Println()
+	fmt.Println(a.a)
 	time.Sleep(5 * time.Hour)
 }
