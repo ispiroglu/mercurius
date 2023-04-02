@@ -9,16 +9,15 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"log"
-	"sync/atomic"
 	"time"
 )
 
 const ADDR = "0.0.0.0:9000"
 const TopicName = "SampleTopicName"
 
-type counter struct {
-	a atomic.Int32
-}
+//type counter struct {
+//	a atomic.Int32
+//}
 
 // TODO: Create Client Struct!
 func main() {
@@ -62,7 +61,7 @@ func main() {
 			}(count)
 		}
 	}()
-	a := counter{a: atomic.Int32{}}
+	//a := counter{a: atomic.Int32{}}
 	// SubA Scope
 	{
 		x := 1
@@ -90,7 +89,7 @@ func main() {
 
 					// Handle Event!
 					log.Println("Received event on", sReqA.SubscriberID, event)
-					a.a.Add(1)
+					//a.a.Add(1)
 				}
 			}(x)
 		}
