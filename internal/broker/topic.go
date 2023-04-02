@@ -73,12 +73,14 @@ func (t *Topic) PublishEvent(event *proto.Event) {
 		t.logger.Info("There is no subscriber at this time. Publishing the event to event channel!", zap.String("Topic Name", t.Name))
 		t.EventChan <- proto2.Clone(event).(*proto.Event) // Do we need this cloning?
 	} else {
+		t.Lock()
 		for _, s := range t.Subscribers {
 			go func(s *Subscriber, event *proto.Event) {
 				s.logger.Info("Sending event to subscriber", zap.String("Topic", event.Topic), zap.String("SubscriberID", s.Id), zap.String("Subscriber name", s.Name))
 				s.EventChannel <- event
 			}(s, proto2.Clone(event).(*proto.Event))
 		}
+		t.Unlock()
 	}
 }
 
