@@ -73,42 +73,48 @@ func (t *Topic) PublishEvent(event *proto.Event) {
 		t.logger.Info("There is no subscriber at this time. Publishing the event to event channel!", zap.String("Topic Name", t.Name))
 		t.EventChan <- proto2.Clone(event).(*proto.Event) // Do we need this cloning?
 	} else {
-		go func() {
-			for _, x := range t.Subscribers {
-				x.logger.Info("Sending event to subscriber", zap.String("Topic", event.Topic), zap.String("SubscriberID", x.Id), zap.String("Subscriber name", x.Name))
-				newEvent := proto2.Clone(event).(*proto.Event) // TODO: Change ID of event
-				x.EventChannel <- newEvent
-			}
-		}()
+		t.Lock()
+		for _, s := range t.Subscribers {
+			go func(s *Subscriber, event *proto.Event) {
+				s.logger.Info("Sending event to subscriber", zap.String("Topic", event.Topic), zap.String("SubscriberID", s.Id), zap.String("Subscriber name", s.Name))
+				s.EventChannel <- event
+			}(s, proto2.Clone(event).(*proto.Event))
+		}
+		t.Unlock()
 	}
 }
 
-func (t *Topic) AddSubscriber(ctx context.Context, id string, name string) error {
+func (t *Topic) AddSubscriber(ctx context.Context, id string, name string) (<-chan *proto.Event, error) {
 	t.Lock()
 	defer t.Unlock()
+
 	if t.Subscribers[id] != nil {
 		t.logger.Error("Could not add already existing subscriber to topic", zap.String("Topic", t.Name), zap.String("SubscriberID", id), zap.String("Subscriber name", name))
 		errorMessage := fmt.Sprintf("This subscriber: %s is alreay added to this topic: %s\n", id, t.Name)
-		return status.Error(codes.AlreadyExists, errorMessage)
+		return nil, status.Error(codes.AlreadyExists, errorMessage)
 	}
 
 	s := NewSubscriber(ctx, id, name)
 	t.Subscribers[id] = s
+	t.logger.Info("Added subscriber", zap.String("Topic", t.Name), zap.String("sId", id), zap.String("sName", name))
 
-	go func() {
-		for event := range t.EventChan {
-			s.logger.Info("Sending event to subscriber", zap.String("Topic", event.Topic), zap.String("SubscriberID", s.Id), zap.String("Subscriber name", s.Name))
-			s.EventChannel <- event
-		}
-	}()
-	return nil
+	if len(t.Subscribers) == 1 {
+		go func() {
+			for event := range t.EventChan {
+				s.logger.Info("Sending event to subscriber", zap.String("Topic", event.Topic), zap.String("SubscriberID", s.Id), zap.String("Subscriber name", s.Name))
+				s.EventChannel <- event
+			}
+		}()
+	}
+
+	return s.EventChannel, nil
 }
 
 func newTopic(name string) *Topic {
 	return &Topic{
 		logger:      logger.NewLogger(),
 		Name:        name,
-		Subscribers: map[string]*Subscriber{},
-		EventChan:   make(chan *proto.Event, 70), // TODO: Should this be buffered? Or should we consider asynchrony in upper layer?
-	} // UNLESS BUFFERED THATS GIVING ERRORS
+		Subscribers: make(map[string]*Subscriber),
+		EventChan:   make(chan *proto.Event), // TODO: Should this be buffered? Or should we consider asynchrony in upper layer?
+	}
 }
