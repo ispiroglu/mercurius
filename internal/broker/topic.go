@@ -44,7 +44,7 @@ func NewTopicRepository() *TopicRepository {
 func (r *TopicRepository) GetTopic(name string) (*Topic, error) {
 	topic, exist := r.Topics[name]
 	if !exist {
-		r.logger.Warn("Could not found topic", zap.String("Topic", name))
+		//r.logger.Warn("Could not found topic", zap.String("Topic", name))
 		return nil, status.Error(codes.NotFound, "cannot found the topic called:"+name)
 	}
 
@@ -57,7 +57,7 @@ func (r *TopicRepository) CreateTopic(name string) (*Topic, error) {
 
 	_, err := r.GetTopic(name)
 	if err == nil {
-		r.logger.Warn("Cannot create the topic that already exists", zap.String("Topic", name))
+		//r.logger.Warn("Cannot create the topic that already exists", zap.String("Topic", name))
 		return nil, status.Error(codes.AlreadyExists, "there is already a topic named:"+name)
 	}
 

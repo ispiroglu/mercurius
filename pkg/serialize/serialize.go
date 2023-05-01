@@ -3,7 +3,6 @@ package serialize
 import (
 	"bytes"
 	"encoding/gob"
-	"fmt"
 	"log"
 )
 
@@ -52,6 +51,6 @@ func (s *Serializer) Decode(byteArr []byte, toReturn any) error {
 		return err
 	}
 
-	fmt.Println("Decoded Successfully, ", toReturn)
+	//fmt.Println("Decoded Successfully, ", toReturn)
 	return nil
 }
