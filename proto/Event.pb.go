@@ -273,11 +273,11 @@ var file_Event_proto_depIdxs = []int32{
 	1, // 3: proto.Mercurius.Subscribe:input_type -> proto.SubscribeRequest
 	2, // 4: proto.Mercurius.Publish:output_type -> proto.ACK
 	0, // 5: proto.Mercurius.Subscribe:output_type -> proto.Event
-	4, // [4:6] is the sub-list for method output_type
-	2, // [2:4] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	4, // [4:6] is the subscriber-client-list for method output_type
+	2, // [2:4] is the subscriber-client-list for method input_type
+	2, // [2:2] is the subscriber-client-list for extension type_name
+	2, // [2:2] is the subscriber-client-list for extension extendee
+	0, // [0:2] is the subscriber-client-list for field type_name
 }
 
 func init() { file_Event_proto_init() }

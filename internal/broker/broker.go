@@ -31,12 +31,12 @@ func (b *Broker) Publish(event *pb.Event) (*pb.ACK, error) {
 
 	topic, err := b.GetTopic(event.Topic)
 	if err != nil {
-		b.logger.Warn("Broker cannot found the topic to publish", zap.String("Topic", event.Topic), zap.Error(err))
+		b.logger.Warn("Broker cannot found the topic to publish", zap.String("Topic", event.Topic)) //)//, zap.Error(err))
 		topic, err = b.CreateTopic(event.Topic)
 
 		st, ok := status.FromError(err)
 		if !ok && st.Code() != codes.AlreadyExists {
-			b.logger.Error("Broker cannot create topic", zap.String("Topic", event.Topic), zap.Error(err))
+			b.logger.Error("Broker cannot create topic", zap.String("Topic", event.Topic)) //, zap.Error(err))
 			return nil, err
 		} else if st.Code() == codes.AlreadyExists {
 			topic, _ = b.GetTopic(event.Topic)
@@ -52,13 +52,12 @@ func (b *Broker) Subscribe(ctx context.Context, topicName string, sId string, sN
 
 	t, err := b.GetTopic(topicName)
 	if err != nil {
-		b.logger.Warn("Broker cannot found the topic to subscribe", zap.String("Topic", topicName), zap.Error(err))
+		b.logger.Info("Broker cannot found the topic to subscribe", zap.String("Topic", topicName)) //, zap.Error(err))
 		t, err = b.CreateTopic(topicName)
 
 		st, ok := status.FromError(err)
-		b.logger.Info("", zap.Int("Code", int(st.Code())), zap.Bool("OK", ok))
 		if !ok && st.Code() != codes.AlreadyExists {
-			b.logger.Error("Broker cannot create topic", zap.String("Topic", topicName), zap.Error(err), zap.Bool("A", st.Code() != codes.AlreadyExists), zap.String("Code", st.String()))
+			b.logger.Error("Broker cannot create topic", zap.String("Topic", topicName)) //, zap.Error(err), zap.Bool("A", st.Code() != codes.AlreadyExists), zap.String("Code", st.String()))
 			return nil, err
 		} else if st.Code() == codes.AlreadyExists {
 			t, _ = b.GetTopic(topicName)
@@ -67,7 +66,7 @@ func (b *Broker) Subscribe(ctx context.Context, topicName string, sId string, sN
 
 	ch, err := t.AddSubscriber(ctx, sId, sName)
 	if err != nil {
-		b.logger.Error("Broker could not add subscriber to topic", zap.String("Topic", topicName), zap.String("SubscriberID", sId), zap.Error(err))
+		b.logger.Error("Broker could not add subscriber to topic", zap.String("Topic", topicName), zap.String("SubscriberID", sId)) //, zap.Error(err))
 		return nil, err
 	}
 	return ch, nil

@@ -34,7 +34,7 @@ func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_S
 
 	c, err := s.broker.Subscribe(context.Background(), req.Topic, req.SubscriberID, req.SubscriberName)
 	if err != nil {
-		s.logger.Error("Error on subscribe", zap.String("Topic", req.Topic), zap.String("SubscriberID", req.SubscriberID), zap.String("Subscriber Name", req.SubscriberName), zap.Error(err))
+		s.logger.Error("Error on subscribe", zap.String("Topic", req.Topic), zap.String("SubscriberID", req.SubscriberID), zap.String("Subscriber Name", req.SubscriberName)) //, zap.Error(err))
 		return err
 	}
 
@@ -43,8 +43,8 @@ func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_S
 	// TODO: Should we run this for block in a goroutine? -> !This gives an error! Why
 	for event := range c {
 		if err := stream.Send(event); err != nil {
-			s.logger.Error("Error on sending event", zap.String("Topic", event.Topic), zap.String("SubscriberID", req.SubscriberID), zap.String("Subscriber Name", req.SubscriberName), zap.Error(err))
-			break // TODO: Should change this to a done channel or error channel !
+			s.logger.Error("Error on sending event", zap.String("Topic", event.Topic), zap.String("SubscriberID", req.SubscriberID), zap.String("Subscriber Name", req.SubscriberName)) //, zap.Error(err))
+			break                                                                                                                                                                       // TODO: Should change this to a done channel or error channel !
 		}
 	}
 

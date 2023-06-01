@@ -20,7 +20,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Cannot listen", zap.String("TCP", TCP), zap.String("ADDR", ADDR), zap.Error(err))
 	}
-	log.Info("Listening")
+	log.Info("Listening on: " + ADDR)
 
 	grpcServer := grpc.NewServer()
 	server := sv.NewMercuriusServer()
