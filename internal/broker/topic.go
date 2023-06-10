@@ -84,7 +84,7 @@ func (t *Topic) PublishEvent(event *proto.Event) {
 	}
 }
 
-func (t *Topic) AddSubscriber(ctx context.Context, id string, name string) (<-chan *proto.Event, error) {
+func (t *Topic) AddSubscriber(ctx context.Context, id string, name string) (*Subscriber, error) {
 	t.SubscriberRepository.Lock()
 	defer t.SubscriberRepository.Unlock()
 
@@ -105,7 +105,17 @@ func (t *Topic) AddSubscriber(ctx context.Context, id string, name string) (<-ch
 		}()
 	}
 
-	return s.EventChannel, nil
+	return s, nil
+}
+
+func (r *TopicRepository) Unsubscribe(subscriber *Subscriber) {
+	for _, topic := range r.Topics {
+		if err := topic.SubscriberRepository.Unsubscribe(subscriber); err == nil {
+			r.logger.Info("Unsubscription has done",
+				zap.String("Topic Name", topic.Name),
+				zap.String("Subscription ID", subscriber.Id))
+		}
+	}
 }
 
 func newTopic(name string) *Topic {

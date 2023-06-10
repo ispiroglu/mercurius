@@ -47,7 +47,7 @@ func (b *Broker) Publish(event *pb.Event) (*pb.ACK, error) {
 	return &pb.ACK{}, nil
 }
 
-func (b *Broker) Subscribe(ctx context.Context, topicName string, sId string, sName string) (<-chan *pb.Event, error) {
+func (b *Broker) Subscribe(ctx context.Context, topicName string, sId string, sName string) (*Subscriber, error) {
 	b.logger.Info("Broker received subscription request", zap.String("Topic", topicName), zap.String("SubscriberID", sId))
 
 	t, err := b.GetTopic(topicName)
@@ -64,10 +64,15 @@ func (b *Broker) Subscribe(ctx context.Context, topicName string, sId string, sN
 		}
 	}
 
-	ch, err := t.AddSubscriber(ctx, sId, sName)
+	s, err := t.AddSubscriber(ctx, sId, sName)
 	if err != nil {
 		b.logger.Error("Broker could not add subscriber to topic", zap.String("Topic", topicName), zap.String("SubscriberID", sId)) //, zap.Error(err))
 		return nil, err
 	}
-	return ch, nil
+	return s, nil
+}
+
+func (b *Broker) Unsubscribe(sub *Subscriber) {
+	b.logger.Info("Unsubscribing", zap.String("ID", sub.Id), zap.String("Subscriber Name", sub.Name))
+	b.TopicRepository.Unsubscribe(sub)
 }

@@ -5,7 +5,6 @@ import (
 	logger2 "github.com/ispiroglu/mercurius/internal/logger"
 	"github.com/ispiroglu/mercurius/pkg/serialize"
 	"github.com/ispiroglu/mercurius/proto"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -47,31 +46,43 @@ func main() {
 	if err != nil {
 		log.Println(err)
 	}
-
-	count := 0
-
-	go func(c *int) {
-		time.Sleep(180 * time.Second)
-
-		logger.Info("", zap.Int("Received event count", *c))
-	}(&count)
+	_ = client
+	//count := 0
+	_ = s
 	for {
-		event, err := client.Recv()
-		if err != nil {
-			log.Println(err)
-			return
-		}
+		//event, err := client.Recv()
+		//if err != nil {
+		//	log.Println(err)
+		//}
+		//
+		//println(event)
+		time.Sleep(500 * time.Second)
 
-		//logger.Info("Got Event")
-		body := ""
-		err = s.Decode(event.Body, &body)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		logger.Info("Event body -> " + body)
-
-		count++
-
+		break
 	}
+
+	//go func(c *int) {
+	//	time.Sleep(180 * time.Second)
+	//
+	//	logger.Info("", zap.Int("Received event count", *c))
+	//}(&count)
+	//for {
+	//	event, err := client.Recv()
+	//	if err != nil {
+	//		log.Println(err)
+	//		return
+	//	}
+	//
+	//	//logger.Info("Got Event")
+	//	body := ""
+	//	err = s.Decode(event.Body, &body)
+	//	if err != nil {
+	//		log.Println(err)
+	//		return
+	//	}
+	//	logger.Info("Event body -> " + body)
+	//
+	//	count++
+	//
+	//}
 }
