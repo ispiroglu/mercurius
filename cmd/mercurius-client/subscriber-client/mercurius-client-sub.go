@@ -48,7 +48,7 @@ func main() {
 				CreatedAt:      timestamppb.Now(),
 			}
 
-			ctx, _ := context.WithCancel(context.Background())
+			ctx, fn := context.WithCancel(context.Background())
 			client, err := c.Subscribe(ctx, sReq)
 			if err != nil {
 				log.Println(err)
@@ -67,7 +67,7 @@ func main() {
 				}
 				//
 				println(event)
-
+				_ = fn
 			}
 		}(x)
 
