@@ -30,7 +30,7 @@ func (s *Server) Publish(_ context.Context, event *proto.Event) (*proto.ACK, err
 }
 
 func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_SubscribeServer) error {
-	s.logger.Info("Received publish request", zap.String("Topic", req.Topic))
+	s.logger.Info("Received subscribe request", zap.String("Topic", req.Topic))
 	ctx := stream.Context()
 	sub, err := s.broker.Subscribe(ctx, req.Topic, req.SubscriberID, req.SubscriberName)
 	if err != nil {

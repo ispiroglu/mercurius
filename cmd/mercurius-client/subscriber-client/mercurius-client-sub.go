@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	logger2 "github.com/ispiroglu/mercurius/internal/logger"
 	"github.com/ispiroglu/mercurius/pkg/serialize"
 	"github.com/ispiroglu/mercurius/proto"
@@ -35,32 +36,85 @@ func main() {
 	logger.Info("Client Name: " + clientName)
 	logger.Info("Topic Name: " + topicName)
 
-	sReq := &proto.SubscribeRequest{
-		SubscriberID:   clientName,
-		SubscriberName: clientName,
-		Topic:          topicName,
-		CreatedAt:      timestamppb.Now(),
+	x := 250000
+	for x > 0 {
+		//time.Sleep(1 * time.Second)
+		go func(y int) {
+			//println(y)
+			sReq := &proto.SubscribeRequest{
+				SubscriberID:   fmt.Sprintf("%d", y),
+				SubscriberName: fmt.Sprintf("%d", y),
+				Topic:          topicName,
+				CreatedAt:      timestamppb.Now(),
+			}
+
+			ctx, _ := context.WithCancel(context.Background())
+			client, err := c.Subscribe(ctx, sReq)
+			if err != nil {
+				log.Println(err)
+			}
+			_ = client
+			//count := 0
+			_ = s
+			for {
+				//go func() {
+				//	time.Sleep(5 * time.Second)
+				//	fn()
+				//}()
+				event, err := client.Recv()
+				if err != nil {
+					log.Println(err)
+				}
+				//
+				println(event)
+
+			}
+		}(x)
+
+		x--
 	}
 
-	client, err := c.Subscribe(context.Background(), sReq)
-	if err != nil {
-		log.Println(err)
-	}
-	_ = client
-	//count := 0
-	_ = s
-	for {
-		//event, err := client.Recv()
-		//if err != nil {
-		//	log.Println(err)
-		//}
-		//
-		//println(event)
-		time.Sleep(500 * time.Second)
+	x = 2500000
+	for x > 0 {
 
-		break
+		time.Sleep(1 * time.Second)
+		//time.Sleep(1 * time.Second)
+		go func(y int) {
+			println(y)
+			sReq := &proto.SubscribeRequest{
+				SubscriberID:   fmt.Sprintf("%d1", y),
+				SubscriberName: fmt.Sprintf("%d1", y),
+				Topic:          topicName,
+				CreatedAt:      timestamppb.Now(),
+			}
+
+			ctx, _ := context.WithCancel(context.Background())
+			client, err := c.Subscribe(ctx, sReq)
+			if err != nil {
+				log.Println(err)
+			}
+			_ = client
+			//count := 0
+			_ = s
+			for {
+				//go func() {
+				//	time.Sleep(5 * time.Second)
+				//	fn()
+				//}()
+				event, err := client.Recv()
+				if err != nil {
+					log.Println(err)
+				}
+				//
+				println(event)
+
+			}
+		}(x)
+
+		x--
 	}
 
+	time.Sleep(99999 * time.Second)
 	//go func(c *int) {
 	//	time.Sleep(180 * time.Second)
 	//
