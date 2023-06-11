@@ -88,7 +88,7 @@ func main() {
 				CreatedAt:      timestamppb.Now(),
 			}
 
-			ctx, _ := context.WithCancel(context.Background())
+			ctx, fn := context.WithCancel(context.Background())
 			client, err := c.Subscribe(ctx, sReq)
 			if err != nil {
 				log.Println(err)
@@ -97,6 +97,8 @@ func main() {
 			//count := 0
 			_ = s
 			for {
+				_ = fn
+
 				//go func() {
 				//	time.Sleep(5 * time.Second)
 				//	fn()
