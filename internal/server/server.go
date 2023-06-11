@@ -51,7 +51,6 @@ loop:
 			// Brokers will have subscription map in the future.
 			// So this process will be a broker level
 			go func(sub *broker.Subscriber) {
-				s.logger.Info("Received Unsubscribe signal")
 				s.broker.Unsubscribe(sub)
 			}(sub)
 
