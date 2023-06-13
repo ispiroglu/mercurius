@@ -2,13 +2,13 @@ package broker
 
 import (
 	"context"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"sync"
 
 	"github.com/ispiroglu/mercurius/internal/logger"
 	"github.com/ispiroglu/mercurius/proto"
 	"go.uber.org/zap"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 const bufferSize = 20
@@ -27,15 +27,16 @@ type Subscriber struct {
 	Ctx          context.Context // TODO: What to do with this?
 }
 
-func (r *SubscriberRepository) addSubscriber(ctx context.Context, id string, name string) (*Subscriber, error) {
-	if r.Subscribers[id] != nil {
-		return nil, status.Error(codes.AlreadyExists, "Already Exists")
+func (r *SubscriberRepository) Unsubscribe(subscriber *Subscriber) error {
+	r.Lock()
+	defer r.Unlock()
+
+	if _, ok := r.Subscribers[subscriber.Id]; !ok {
+		return status.Error(codes.NotFound, "Cannot found subscriber at repository.")
 	}
 
-	s := NewSubscriber(ctx, id, name)
-	r.Subscribers[id] = s
-
-	return s, nil
+	delete(r.Subscribers, subscriber.Id)
+	return nil
 }
 
 // NewSubscriber Should we handle the channel buffer size here or get at register level?
@@ -54,4 +55,15 @@ func NewSubscriberRepository() *SubscriberRepository {
 		logger:      logger.NewLogger(),
 		Subscribers: map[string]*Subscriber{},
 	}
+}
+
+func (r *SubscriberRepository) addSubscriber(ctx context.Context, id string, name string) (*Subscriber, error) {
+	if r.Subscribers[id] != nil {
+		return nil, status.Error(codes.AlreadyExists, "Already Exists")
+	}
+
+	s := NewSubscriber(ctx, id, name)
+	r.Subscribers[id] = s
+
+	return s, nil
 }

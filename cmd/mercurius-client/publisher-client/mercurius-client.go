@@ -72,6 +72,7 @@ func main() {
 		for ; count <= upperBound; count++ {
 			go func(count int) {
 				logger.Info("Publishing event")
+				//time.Sleep(1 * time.Second)
 				_, err := c.Publish(context.Background(), event)
 				if err != nil {
 					log.Println("Cannot publish event")
@@ -79,6 +80,7 @@ func main() {
 
 				}
 			}(count)
+			time.Sleep(1 * time.Second)
 		}
 	}()
 
