@@ -36,7 +36,7 @@ func (rh *RetryHandler) Remove(subId string) {
 }
 
 func (rh *RetryHandler) Create(subId string) chan *proto.Event {
-	c := make(chan *proto.Event)
+	c := make(chan *proto.Event, retryBufferSize)
 	rh.RetryQueues[subId] = c
 	go func() {
 		eventRetryCount := make(map[string]int)
