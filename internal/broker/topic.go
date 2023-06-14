@@ -3,10 +3,9 @@ package broker
 import (
 	"context"
 	"fmt"
-	"sync"
-
 	"github.com/ispiroglu/mercurius/internal/logger"
 	"go.uber.org/zap"
+	"sync"
 
 	"github.com/ispiroglu/mercurius/proto"
 	"google.golang.org/grpc/codes"
@@ -69,22 +68,24 @@ func (r *TopicRepository) CreateTopic(name string) (*Topic, error) {
 
 func (t *Topic) PublishEvent(event *proto.Event) {
 	// TODO: What else need to be done for Publishing at Topic Level?
+
 	if len(t.SubscriberRepository.Subscribers) == 0 {
 		t.logger.Info("There is no subscriber at this time. Publishing the event to event channel!", zap.String("Topic Name", t.Name))
 		t.EventChan <- event
 	} else {
-		t.SubscriberRepository.Lock()
+
+		// ! Should not lock the subscriber map here in order to keep track of the unsubscriptions.
+		// Should check the subscription date and the publishing date !
 		for _, s := range t.SubscriberRepository.Subscribers {
 			go func(s *Subscriber, event *proto.Event) {
 				s.logger.Info("Sending event to subscriber", zap.String("Topic", event.Topic), zap.String("SubscriberID", s.Id), zap.String("Subscriber name", s.Name))
 				s.EventChannel <- event
 			}(s, event)
 		}
-		t.SubscriberRepository.Unlock()
 	}
 }
 
-func (t *Topic) AddSubscriber(ctx context.Context, id string, name string) (<-chan *proto.Event, error) {
+func (t *Topic) AddSubscriber(ctx context.Context, id string, name string) (*Subscriber, error) {
 	t.SubscriberRepository.Lock()
 	defer t.SubscriberRepository.Unlock()
 
@@ -98,14 +99,28 @@ func (t *Topic) AddSubscriber(ctx context.Context, id string, name string) (<-ch
 	t.logger.Info("Added subscriber", zap.String("Topic", t.Name), zap.String("sId", id), zap.String("sName", name))
 	if len(t.SubscriberRepository.Subscribers) == 1 {
 		go func() {
-			for event := range t.EventChan {
-				s.logger.Info("Sending event to subscriber", zap.String("Topic", event.Topic), zap.String("SubscriberID", s.Id), zap.String("Subscriber name", s.Name))
-				s.EventChannel <- event
+			if len(t.EventChan) != 0 {
+				for event := range t.EventChan {
+					s.logger.Info("Sending event to subscriber", zap.String("Topic", event.Topic), zap.String("SubscriberID", s.Id), zap.String("Subscriber name", s.Name))
+					s.EventChannel <- event
+				}
 			}
 		}()
 	}
 
-	return s.EventChannel, nil
+	return s, nil
+}
+
+func (r *TopicRepository) Unsubscribe(subscriber *Subscriber) {
+	for _, topic := range r.Topics {
+		go func(t *Topic) {
+			if err := t.SubscriberRepository.Unsubscribe(subscriber); err == nil {
+				r.logger.Info("Unsubscription has done",
+					zap.String("Topic Name", t.Name),
+					zap.String("Subscription ID", subscriber.Id))
+			}
+		}(topic)
+	}
 }
 
 func newTopic(name string) *Topic {
