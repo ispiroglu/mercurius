@@ -49,7 +49,6 @@ func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_S
 	    |  TODO: If the client cannot process it should
 		|  ask for the event again for a later time. Context?
 		////////////////////*/
-loop:
 	for {
 
 		select {
@@ -58,28 +57,21 @@ loop:
 
 			// Brokers will have subscription map in the future.
 			// So this process will be a broker level
+			broker.SubscriberRetryHandler.RemoveRetryQueue(sub.Id)
 			go func(sub *broker.Subscriber) {
 				s.broker.Unsubscribe(sub)
 			}(sub)
 
-			break loop
+			return nil
 		case event := <-sub.EventChannel:
-			if rand.Intn(2) == 1 {
+			if rand.Intn(1) == 0 {
 				s.logger.Error("Simulated error")
 				sub.RetryQueue <- event
-				break loop
 			} else if err := stream.Send(event); err != nil {
-				s.logger.Error("Error on sending event", zap.String("Topic", event.Topic), zap.String("SubscriberID", req.SubscriberID), zap.String("Subscriber Name", req.SubscriberName)) //, zap.Error(err))
-				break loop                                                                                                                                                                  // TODO: Should change this to a done channel or error channel !
-			}
-		case event := <-sub.RetryQueue:
-			if err := stream.Send(event); err != nil {
-				s.logger.Error("Error on sending event", zap.String("Topic", event.Topic), zap.String("SubscriberID", req.SubscriberID), zap.String("Subscriber Name", req.SubscriberName)) //, zap.Error(err))
+				s.logger.Error("Error on sending event", zap.String("TopicName", event.Topic), zap.String("SubscriberID", req.SubscriberID), zap.String("Subscriber Name", req.SubscriberName)) //, zap.Error(err))
+				s.logger.Info("Sending event to retry queue")
 				sub.RetryQueue <- event
-				break loop
 			}
 		}
 	}
-
-	return nil
 }

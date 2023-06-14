@@ -26,6 +26,7 @@ type Subscriber struct {
 	Name         string
 	EventChannel chan *proto.Event
 	RetryQueue   chan *proto.Event
+	TopicName    string
 	Ctx          context.Context // TODO: What to do with this?
 }
 
@@ -42,13 +43,15 @@ func (r *SubscriberRepository) Unsubscribe(subscriber *Subscriber) error {
 }
 
 // NewSubscriber Should we handle the channel buffer size here or get at register level?
-func NewSubscriber(ctx context.Context, sId string, sName string) *Subscriber {
+func NewSubscriber(ctx context.Context, sId string, sName string, topicName string) *Subscriber {
+	eq := make(chan *proto.Event, bufferSize)
 	return &Subscriber{
 		logger:       logger.NewLogger(),
 		Id:           sId,
 		Name:         sName,
-		EventChannel: make(chan *proto.Event, bufferSize),
-		RetryQueue:   SubscriberRetryHandler.Create(sId),
+		EventChannel: eq,
+		RetryQueue:   SubscriberRetryHandler.CreateRetryQueue(sId, eq),
+		TopicName:    topicName,
 		Ctx:          ctx,
 	}
 }
