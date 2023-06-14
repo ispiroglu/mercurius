@@ -19,9 +19,8 @@ type Server struct {
 
 func NewMercuriusServer() *Server {
 	return &Server{
-		logger:     logger.NewLogger(),
-		broker:     broker.NewBroker(),
-		RetryQueue: broker.GetRetryQueue(),
+		logger: logger.NewLogger(),
+		broker: broker.NewBroker(),
 	}
 }
 
@@ -45,6 +44,11 @@ func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_S
 	// TODO: Who is the subscriber? How to handle fan outs??
 	// TODO: How to implement done channel? Should we implement?
 	// TODO: Should we run this for block in a goroutine? -> !This gives an error! Why
+
+	/*////////////////////
+	    |  TODO: If the client cannot process it should
+		|  ask for the event again for a later time. Context?
+		////////////////////*/
 loop:
 	for {
 
@@ -62,13 +66,19 @@ loop:
 		case event := <-sub.EventChannel:
 			if rand.Intn(2) == 1 {
 				s.logger.Error("Simulated error")
-				s.RetryQueue <- event
+				sub.RetryQueue <- event
+				break loop
 			} else if err := stream.Send(event); err != nil {
 				s.logger.Error("Error on sending event", zap.String("Topic", event.Topic), zap.String("SubscriberID", req.SubscriberID), zap.String("Subscriber Name", req.SubscriberName)) //, zap.Error(err))
 				break loop                                                                                                                                                                  // TODO: Should change this to a done channel or error channel !
 			}
+		case event := <-sub.RetryQueue:
+			if err := stream.Send(event); err != nil {
+				s.logger.Error("Error on sending event", zap.String("Topic", event.Topic), zap.String("SubscriberID", req.SubscriberID), zap.String("Subscriber Name", req.SubscriberName)) //, zap.Error(err))
+				sub.RetryQueue <- event
+				break loop
+			}
 		}
-
 	}
 
 	return nil

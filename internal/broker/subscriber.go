@@ -2,9 +2,10 @@ package broker
 
 import (
 	"context"
+	"sync"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"sync"
 
 	"github.com/ispiroglu/mercurius/internal/logger"
 	"github.com/ispiroglu/mercurius/proto"
@@ -24,6 +25,7 @@ type Subscriber struct {
 	Id           string
 	Name         string
 	EventChannel chan *proto.Event
+	RetryQueue   chan *proto.Event
 	Ctx          context.Context // TODO: What to do with this?
 }
 
@@ -46,6 +48,7 @@ func NewSubscriber(ctx context.Context, sId string, sName string) *Subscriber {
 		Id:           sId,
 		Name:         sName,
 		EventChannel: make(chan *proto.Event, bufferSize),
+		RetryQueue:   SubscriberRetryHandler.Create(sId),
 		Ctx:          ctx,
 	}
 }

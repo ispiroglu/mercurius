@@ -1,62 +1,61 @@
 package broker
 
 import (
-	"context"
-	"log"
+	"time"
 
 	"github.com/ispiroglu/mercurius/internal/logger"
 	"github.com/ispiroglu/mercurius/proto"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const ADDR = "0.0.0.0:9000"
+// What should these values be?
+const retryBufferSize = 50
+const retryCount = 5
+const retryTime = 10
+const retryTimeType = time.Second
 
-var handler = NewRetryHandler()
-
-func init() {
-	logger := logger.NewLogger()
-	conn, err := grpc.Dial(ADDR, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Fatalf("Failed to dial to %s, %v", ADDR, err)
-	}
-
-	c := proto.NewMercuriusClient(conn)
-	go func(retryChannel chan *proto.Event, logger *zap.Logger) {
-		defer conn.Close()
-		for {
-			event := <-retryChannel
-			logger.Info("Retrying event " + event.Id)
-
-			_, err := c.Publish(context.Background(), event)
-			if err != nil {
-				logger.Error(err.Error())
-				/*============================
-				| TODO proper timeout system |
-				=============================*/
-				now := int64(timestamppb.Now().AsTime().Unix())
-				if event.CreatedAt.AsTime().Unix()+int64(event.ExpiresAt) > now {
-					logger.Info("Timeout for event " + event.Id)
-				}
-				retryChannel <- event
-			}
-			logger.Info("Retry for event " + event.Id + " is successful.")
-		}
-	}(GetRetryQueue(), logger)
-}
+var SubscriberRetryHandler = NewRetryHandler()
 
 type RetryHandler struct {
-	RetryQueue chan *proto.Event
+	bufferSize  int
+	RetryQueues map[string]chan *proto.Event
+	logger      *zap.Logger
 }
 
 func NewRetryHandler() *RetryHandler {
 	return &RetryHandler{
-		RetryQueue: make(chan *proto.Event),
+		bufferSize:  retryBufferSize,
+		RetryQueues: make(map[string]chan *proto.Event),
+		logger:      logger.NewLogger(),
 	}
 }
 
-func GetRetryQueue() chan *proto.Event {
-	return handler.RetryQueue
+func (rh *RetryHandler) Remove(subId string) {
+	delete(rh.RetryQueues, subId)
+}
+
+func (rh *RetryHandler) Create(subId string) chan *proto.Event {
+	c := make(chan *proto.Event)
+	rh.RetryQueues[subId] = c
+	go func() {
+		eventRetryCount := make(map[string]int)
+		for {
+			event := <-c
+			eventRetryCount[event.Id]++
+			if eventRetryCount[event.Id] == retryCount {
+				rh.logger.Info("Discarding event " + event.Id + " maximum retries reached")
+				delete(eventRetryCount, event.Id)
+			} else {
+				go func() {
+					time.Sleep(retryTime * retryTimeType)
+					c <- event
+				}()
+			}
+		}
+	}()
+	return c
+}
+
+func GetRetryQueue(subId string) chan *proto.Event {
+	return SubscriberRetryHandler.RetryQueues[subId]
 }
