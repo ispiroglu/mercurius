@@ -9,6 +9,11 @@ import (
 	"go.uber.org/zap"
 )
 
+/*
+	TODO: How to handle full buffer??
+	TODO: Find a way for Internal Server Error
+*/
+
 // What should these values be?
 // This values should be configurable from yml.
 const retryBufferSize = 50
@@ -46,8 +51,6 @@ func (rh *RetryHandler) CreateRetryQueue(subId string, eq chan *proto.Event) cha
 func GetRetryQueue(subId string) chan *proto.Event {
 	return SubscriberRetryHandler.RetryQueues[subId]
 }
-
-// TODO: Buffer Size????
 
 func (rh *RetryHandler) HandleRetryQueue(rq chan *proto.Event, eq chan *proto.Event) {
 	eventRetryCount := make(map[string]int)
