@@ -63,12 +63,12 @@ func NewSubscriberRepository() *SubscriberRepository {
 	}
 }
 
-func (r *SubscriberRepository) addSubscriber(ctx context.Context, id string, name string) (*Subscriber, error) {
+func (r *SubscriberRepository) addSubscriber(ctx context.Context, id string, subName string, topicName string) (*Subscriber, error) {
 	if r.Subscribers[id] != nil {
 		return nil, status.Error(codes.AlreadyExists, "Already Exists")
 	}
 
-	s := NewSubscriber(ctx, id, name)
+	s := NewSubscriber(ctx, id, subName, topicName)
 	r.Subscribers[id] = s
 
 	return s, nil
