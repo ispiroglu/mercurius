@@ -1,6 +1,7 @@
 package broker
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/ispiroglu/mercurius/internal/logger"
@@ -46,6 +47,7 @@ func (rh *RetryHandler) Create(subId string) chan *proto.Event {
 				rh.logger.Info("Discarding event " + event.Id + " maximum retries reached")
 				delete(eventRetryCount, event.Id)
 			} else {
+				rh.logger.Info("Retrying for event " + event.Id + " [" + strconv.Itoa(eventRetryCount[event.Id]) + "]")
 				go func() {
 					time.Sleep(retryTime * retryTimeType)
 					c <- event
