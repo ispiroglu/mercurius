@@ -73,3 +73,9 @@ func (r *SubscriberRepository) addSubscriber(ctx context.Context, id string, sub
 
 	return s, nil
 }
+
+func (r *SubscriberRepository) addSub(s *Subscriber) {
+	r.Lock()
+	defer r.Unlock()
+	r.Subscribers[s.Id] = s
+}
