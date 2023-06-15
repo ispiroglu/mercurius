@@ -24,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 type MercuriusClient interface {
 	Publish(ctx context.Context, in *Event, opts ...grpc.CallOption) (*ACK, error)
 	Subscribe(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (Mercurius_SubscribeClient, error)
+	Retry(ctx context.Context, in *RetryRequest, opts ...grpc.CallOption) (*ACK, error)
 }
 
 type mercuriusClient struct {
@@ -75,12 +76,22 @@ func (x *mercuriusSubscribeClient) Recv() (*Event, error) {
 	return m, nil
 }
 
+func (c *mercuriusClient) Retry(ctx context.Context, in *RetryRequest, opts ...grpc.CallOption) (*ACK, error) {
+	out := new(ACK)
+	err := c.cc.Invoke(ctx, "/proto.Mercurius/Retry", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MercuriusServer is the server API for Mercurius service.
 // All implementations must embed UnimplementedMercuriusServer
 // for forward compatibility
 type MercuriusServer interface {
 	Publish(context.Context, *Event) (*ACK, error)
 	Subscribe(*SubscribeRequest, Mercurius_SubscribeServer) error
+	Retry(context.Context, *RetryRequest) (*ACK, error)
 	mustEmbedUnimplementedMercuriusServer()
 }
 
@@ -93,6 +104,9 @@ func (UnimplementedMercuriusServer) Publish(context.Context, *Event) (*ACK, erro
 }
 func (UnimplementedMercuriusServer) Subscribe(*SubscribeRequest, Mercurius_SubscribeServer) error {
 	return status.Errorf(codes.Unimplemented, "method Subscribe not implemented")
+}
+func (UnimplementedMercuriusServer) Retry(context.Context, *RetryRequest) (*ACK, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Retry not implemented")
 }
 func (UnimplementedMercuriusServer) mustEmbedUnimplementedMercuriusServer() {}
 
@@ -146,6 +160,24 @@ func (x *mercuriusSubscribeServer) Send(m *Event) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _Mercurius_Retry_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RetryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MercuriusServer).Retry(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Mercurius/Retry",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MercuriusServer).Retry(ctx, req.(*RetryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Mercurius_ServiceDesc is the grpc.ServiceDesc for Mercurius service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -156,6 +188,10 @@ var Mercurius_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Publish",
 			Handler:    _Mercurius_Publish_Handler,
+		},
+		{
+			MethodName: "Retry",
+			Handler:    _Mercurius_Retry_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
