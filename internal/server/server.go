@@ -64,7 +64,7 @@ func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_S
 
 			return nil
 		case event := <-sub.EventChannel:
-			if rand.Intn(2) == 0 {
+			if rand.Intn(654) == 0 {
 				s.logger.Error("Simulated error")
 				sub.RetryQueue <- event
 			} else if err := stream.Send(event); err != nil {
