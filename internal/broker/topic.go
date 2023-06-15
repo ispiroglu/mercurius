@@ -89,7 +89,7 @@ func (t *Topic) AddSubscriber(ctx context.Context, id string, name string) (*Sub
 	t.SubscriberRepository.Lock()
 	defer t.SubscriberRepository.Unlock()
 
-	s, err := t.SubscriberRepository.addSubscriber(ctx, id, name)
+	s, err := t.SubscriberRepository.addSubscriber(ctx, id, name, t.Name)
 	if err != nil {
 		t.logger.Error("Could not add already existing subscriber to topic", zap.String("Topic", t.Name), zap.String("SubscriberID", id), zap.String("Subscriber name", name))
 		errorMessage := fmt.Sprintf("This subscriber: %s is alreay added to this topic: %s\n", id, t.Name)
@@ -101,7 +101,7 @@ func (t *Topic) AddSubscriber(ctx context.Context, id string, name string) (*Sub
 		go func() {
 			if len(t.EventChan) != 0 {
 				for event := range t.EventChan {
-					s.logger.Info("Sending event to subscriber", zap.String("Topic", event.Topic), zap.String("SubscriberID", s.Id), zap.String("Subscriber name", s.Name))
+					s.logger.Info("Sending event to subscriber", zap.String("TopicName", event.Topic), zap.String("SubscriberID", s.Id), zap.String("Subscriber name", s.Name))
 					s.EventChannel <- event
 				}
 			}
@@ -111,15 +111,13 @@ func (t *Topic) AddSubscriber(ctx context.Context, id string, name string) (*Sub
 	return s, nil
 }
 
+// TODO: REVIEW
 func (r *TopicRepository) Unsubscribe(subscriber *Subscriber) {
-	for _, topic := range r.Topics {
-		go func(t *Topic) {
-			if err := t.SubscriberRepository.Unsubscribe(subscriber); err == nil {
-				r.logger.Info("Unsubscription has done",
-					zap.String("Topic Name", t.Name),
-					zap.String("Subscription ID", subscriber.Id))
-			}
-		}(topic)
+	t := subscriber.TopicName
+	if err := r.Topics[t].SubscriberRepository.Unsubscribe(subscriber); err == nil {
+		r.logger.Info("Unsubscription has done",
+			zap.String("TopicName Name", t),
+			zap.String("Subscription ID", subscriber.Id))
 	}
 }
 

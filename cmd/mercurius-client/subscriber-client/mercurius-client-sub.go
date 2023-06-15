@@ -34,9 +34,9 @@ func main() {
 	topicName := os.Args[2]
 
 	logger.Info("Client Name: " + clientName)
-	logger.Info("Topic Name: " + topicName)
+	logger.Info("TopicName Name: " + topicName)
 
-	x := 250000
+	x := 1
 	for x > 0 {
 		//time.Sleep(1 * time.Second)
 		go func(y int) {
@@ -68,53 +68,66 @@ func main() {
 				//
 				println(event)
 				_ = fn
-			}
-		}(x)
 
-		x--
-	}
-
-	x = 2500000
-	for x > 0 {
-
-		time.Sleep(1 * time.Second)
-		//time.Sleep(1 * time.Second)
-		go func(y int) {
-			println(y)
-			sReq := &proto.SubscribeRequest{
-				SubscriberID:   fmt.Sprintf("%d1", y),
-				SubscriberName: fmt.Sprintf("%d1", y),
-				Topic:          topicName,
-				CreatedAt:      timestamppb.Now(),
-			}
-
-			ctx, fn := context.WithCancel(context.Background())
-			client, err := c.Subscribe(ctx, sReq)
-			if err != nil {
-				log.Println(err)
-			}
-			_ = client
-			//count := 0
-			_ = s
-			for {
-				_ = fn
-
-				//go func() {
-				//	time.Sleep(5 * time.Second)
-				//	fn()
-				//}()
-				event, err := client.Recv()
-				if err != nil {
-					log.Println(err)
-				}
+				//err = client.CloseSend()
+				//if err != nil {
+				//	fmt.Println("AAAAAAAAAAAAAAAAAAAAAAAAa")
+				//	return
+				//}
 				//
-				println(event)
-
+				//err = client.SendMsg("ASD")
+				//if err != nil {
+				//	fmt.Println("3111111111111111111")
+				//	return
+				//}
 			}
 		}(x)
 
 		x--
 	}
+
+	//x = 1
+	//for x > 0 {
+	//
+	//	time.Sleep(1 * time.Second)
+	//	//time.Sleep(1 * time.Second)
+	//	go func(y int) {
+	//		println(y)
+	//		sReq := &proto.SubscribeRequest{
+	//			SubscriberID:   fmt.Sprintf("%d1", y),
+	//			SubscriberName: fmt.Sprintf("%d1", y),
+	//			Topic:          topicName,
+	//			CreatedAt:      timestamppb.Now(),
+	//		}
+	//
+	//		ctx, fn := context.WithCancel(context.Background())
+	//		client, err := c.Subscribe(ctx, sReq)
+	//		if err != nil {
+	//			log.Println(err)
+	//		}
+	//		_ = client
+	//		//count := 0
+	//		_ = s
+	//		for {
+	//			_ = fn
+	//
+	//			//go func() {
+	//			//	time.Sleep(5 * time.Second)
+	//			//	fn()
+	//			//}()
+	//			event, err := client.Recv()
+	//			if err != nil {
+	//				log.Println(err)
+	//			}
+	//			//
+	//			println(event)
+	//
+	//
+	//		}
+	//	}(x)
+	//
+	//	x--
+	//}
 
 	time.Sleep(99999 * time.Second)
 	//go func(c *int) {

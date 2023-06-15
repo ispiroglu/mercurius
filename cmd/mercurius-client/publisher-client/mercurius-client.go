@@ -2,16 +2,17 @@ package main
 
 import (
 	"context"
+	"log"
+	"os"
+	"strconv"
+	"time"
+
 	logger2 "github.com/ispiroglu/mercurius/internal/logger"
 	"github.com/ispiroglu/mercurius/pkg/serialize"
 	"github.com/ispiroglu/mercurius/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"log"
-	"os"
-	"strconv"
-	"time"
 )
 
 const ADDR = "0.0.0.0:9000"
@@ -76,6 +77,7 @@ func main() {
 				if err != nil {
 					log.Println("Cannot publish event")
 					log.Println(err)
+
 				}
 			}(count)
 			time.Sleep(1 * time.Second)
