@@ -2,7 +2,7 @@ package server
 
 import (
 	"context"
-	"math/rand"
+	"sync/atomic"
 
 	"github.com/ispiroglu/mercurius/internal/broker"
 	"github.com/ispiroglu/mercurius/internal/logger"
@@ -10,17 +10,21 @@ import (
 	"go.uber.org/zap"
 )
 
+var messageCount = atomic.Uint64{}
+
 type Server struct {
 	logger     *zap.Logger
 	broker     *broker.Broker
 	RetryQueue chan *proto.Event
 	proto.UnimplementedMercuriusServer
+	EventCount *atomic.Uint64
 }
 
 func NewMercuriusServer() *Server {
 	return &Server{
-		logger: logger.NewLogger(),
-		broker: broker.NewBroker(),
+		logger:     logger.NewLogger(),
+		broker:     broker.NewBroker(),
+		EventCount: &atomic.Uint64{},
 	}
 }
 
@@ -28,8 +32,12 @@ func NewMercuriusServer() *Server {
 // When we switch to multiple broker implementation we will need this.
 // We should handle the ctx here.
 func (s *Server) Publish(_ context.Context, event *proto.Event) (*proto.ACK, error) {
-	s.logger.Info("Received publish request", zap.String("Topic", event.Topic))
-	return s.broker.Publish(event)
+	s.logger.Info("", zap.String("count", string(event.Body)))
+	// messageCount.Add(1)
+	// s.logger.Info("", zap.Uint64("Message Count", messageCount.Load()))
+
+	go s.broker.Publish(event)
+	return &proto.ACK{}, nil
 }
 
 func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_SubscribeServer) error {
@@ -64,10 +72,7 @@ func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_S
 
 			return nil
 		case event := <-sub.EventChannel:
-			if rand.Intn(654) == 0 {
-				s.logger.Error("Simulated error")
-				sub.RetryQueue <- event
-			} else if err := stream.Send(event); err != nil {
+			if err := stream.Send(event); err != nil {
 				s.logger.Error("Error on sending event", zap.String("TopicName", event.Topic), zap.String("SubscriberID", req.SubscriberID), zap.String("Subscriber Name", req.SubscriberName)) //, zap.Error(err))
 				s.logger.Info("Sending event to retry queue")
 				sub.RetryQueue <- event

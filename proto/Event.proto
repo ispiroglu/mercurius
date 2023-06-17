@@ -32,7 +32,7 @@ message RetryRequest {
 message ACK {}
 
 service Mercurius {
-  rpc Publish (Event) returns (ACK);
+  rpc Publish (Event) returns (ACK) {};
   rpc Subscribe (SubscribeRequest) returns (stream Event);
   rpc Retry (RetryRequest) returns (ACK);
 }

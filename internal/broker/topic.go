@@ -3,9 +3,11 @@ package broker
 import (
 	"context"
 	"fmt"
+	"sync"
+	"sync/atomic"
+
 	"github.com/ispiroglu/mercurius/internal/logger"
 	"go.uber.org/zap"
-	"sync"
 
 	"github.com/ispiroglu/mercurius/proto"
 	"google.golang.org/grpc/codes"
@@ -18,6 +20,7 @@ type Topic struct {
 	Name                 string                // IDs must be Unique
 	SubscriberRepository *SubscriberRepository // TODO: How should we add or remove subscribers?
 	EventChan            chan *proto.Event
+	EventCount           *atomic.Uint64
 }
 
 type TopicRepository struct {
@@ -70,16 +73,15 @@ func (t *Topic) PublishEvent(event *proto.Event) {
 	// TODO: What else need to be done for Publishing at Topic Level?
 
 	if len(t.SubscriberRepository.Subscribers) == 0 {
-		t.logger.Info("There is no subscriber at this time. Publishing the event to event channel!", zap.String("Topic Name", t.Name))
+		t.EventCount.Add(1)
 		t.EventChan <- event
 	} else {
 
-		// ! Should not lock the subscriber map here in order to keep track of the unsubscriptions.
-		// Should check the subscription date and the publishing date !
 		for _, s := range t.SubscriberRepository.Subscribers {
 			go func(s *Subscriber, event *proto.Event) {
 				s.logger.Info("Sending event to subscriber", zap.String("Topic", event.Topic), zap.String("SubscriberID", s.Id), zap.String("Subscriber name", s.Name))
 				s.EventChannel <- event
+				t.EventCount.Add(1)
 			}(s, event)
 		}
 	}
@@ -127,5 +129,6 @@ func newTopic(name string) *Topic {
 		Name:                 name,
 		SubscriberRepository: NewSubscriberRepository(),
 		EventChan:            make(chan *proto.Event), // TODO: Should this be buffered? Or should we consider asynchrony in upper layer?
+		EventCount:           &atomic.Uint64{},
 	}
 }

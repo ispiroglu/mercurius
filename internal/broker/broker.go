@@ -30,7 +30,7 @@ func NewBroker() *Broker {
 }
 
 func (b *Broker) Publish(event *pb.Event) (*pb.ACK, error) {
-	b.logger.Info("Broker received event for publishing", zap.String("Topic", event.Topic))
+	// b.logger.Info("Broker received event for publishing", zap.String("Topic", event.Topic))
 
 	t, err := b.findOrInsertTopic(event.Topic)
 	if err != nil {
@@ -54,7 +54,7 @@ func (b *Broker) Subscribe(ctx context.Context, topicName string, sId string, sN
 		b.logger.Error("Broker could not add subscriber to topic", zap.String("Topic", topicName), zap.String("SubscriberID", sId)) //, zap.Error(err))
 		return nil, err
 	}
-	b.SubscriberRepository.addSub(s)
+	go b.SubscriberRepository.addSub(s)
 	return s, nil
 }
 

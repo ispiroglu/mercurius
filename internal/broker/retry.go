@@ -16,7 +16,7 @@ import (
 
 // What should these values be?
 // This values should be configurable from yml.
-const retryBufferSize = 50
+const retryBufferSize = 5000000
 const retryCount = 5
 const retryTime = 1
 const retryTimeType = time.Second

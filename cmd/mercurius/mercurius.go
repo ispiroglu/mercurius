@@ -1,9 +1,11 @@
 package main
 
 import (
+	"net"
+	"time"
+
 	"github.com/ispiroglu/mercurius/internal/logger"
 	"go.uber.org/zap"
-	"net"
 
 	sv "github.com/ispiroglu/mercurius/internal/server"
 	"github.com/ispiroglu/mercurius/proto"
@@ -26,6 +28,11 @@ func main() {
 	server := sv.NewMercuriusServer()
 
 	proto.RegisterMercuriusServer(grpcServer, server)
+
+	go func() {
+		time.Sleep(10 * time.Second)
+		grpcServer.GracefulStop()
+	}()
 
 	if err := grpcServer.Serve(list); err != nil {
 		log.Fatal("Failed to serve", zap.Error(err))

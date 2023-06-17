@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const bufferSize = 20
+var bufferSize = 5000
 
 type SubscriberRepository struct {
 	sync.RWMutex
@@ -44,7 +44,7 @@ func (r *SubscriberRepository) Unsubscribe(subscriber *Subscriber) error {
 
 // NewSubscriber Should we handle the channel buffer size here or get at register level?
 func NewSubscriber(ctx context.Context, sId string, sName string, topicName string) *Subscriber {
-	eq := make(chan *proto.Event, bufferSize)
+	eq := make(chan *proto.Event)
 	return &Subscriber{
 		logger:       logger.NewLogger(),
 		Id:           sId,
