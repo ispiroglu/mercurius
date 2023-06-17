@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -27,39 +26,19 @@ func main() {
 	}
 
 	logger.Info("Publisehd Event")
-	maxGoroutines := 10000 // Set the maximum number of goroutines you want to allow
-	semaphore := make(chan struct{}, maxGoroutines)
-	var wg sync.WaitGroup
 
-	//// Produce messages to topic (asynchronously)
-	timer := time.NewTimer(3 * time.Second)
-	//// Produce messages until the timer expires
-	for {
-		time.Sleep(1 * time.Microsecond)
-		select {
-		case <-timer.C:
-			// Stop producing messages when the timer expires
-			wg.Wait() // Wait for all goroutines to finish before returning
-			fmt.Printf("Published %d messages\n", messageCount.Load())
-			return
-		default:
-			semaphore <- struct{}{} // Acquire semaphore
-
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				defer func() {
-					<-semaphore // Release semaphore
-				}()
-
+	for i := 0; i < 1; i++ {
+		// time.Sleep(2 * time.Microsecond)
+		go func() {
+			for j := 0; j < 1; j++ {
 				if err := c.Publish(TopicName, []byte(strconv.FormatUint(messageCount.Load(), 10)), context.Background()); err != nil {
 					logger.Error("Err", zap.Error(err))
 				}
 				fmt.Println(strconv.FormatUint(messageCount.Load(), 10))
 
 				messageCount.Add(1)
-			}()
-		}
+			}
+		}()
 	}
 
 	time.Sleep(1 * time.Hour)

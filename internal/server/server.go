@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"runtime"
 	"sync/atomic"
 
 	"github.com/ispiroglu/mercurius/internal/broker"
@@ -17,14 +18,16 @@ type Server struct {
 	broker     *broker.Broker
 	RetryQueue chan *proto.Event
 	proto.UnimplementedMercuriusServer
-	EventCount *atomic.Uint64
+	GetCount  *atomic.Uint64
+	SendCount *atomic.Uint64
 }
 
 func NewMercuriusServer() *Server {
 	return &Server{
-		logger:     logger.NewLogger(),
-		broker:     broker.NewBroker(),
-		EventCount: &atomic.Uint64{},
+		logger:    logger.NewLogger(),
+		broker:    broker.NewBroker(),
+		SendCount: &atomic.Uint64{},
+		GetCount:  &atomic.Uint64{},
 	}
 }
 
@@ -32,16 +35,17 @@ func NewMercuriusServer() *Server {
 // When we switch to multiple broker implementation we will need this.
 // We should handle the ctx here.
 func (s *Server) Publish(_ context.Context, event *proto.Event) (*proto.ACK, error) {
-	s.logger.Info("", zap.String("count", string(event.Body)))
-	// messageCount.Add(1)
-	// s.logger.Info("", zap.Uint64("Message Count", messageCount.Load()))
+	// s.logger.Info("Geldi", zap.String("count", string(event.Body)))
+	s.GetCount.Add(1)
 
-	go s.broker.Publish(event)
+	s.logger.Info("", zap.Int("SAA", runtime.NumGoroutine()))
+
+	// return s.broker.Publish(event)
 	return &proto.ACK{}, nil
 }
 
 func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_SubscribeServer) error {
-	s.logger.Info("Received subscribe request", zap.String("Topic", req.Topic))
+	// s.logger.Info("Received subscribe request", zap.String("Topic", req.Topic))
 	ctx := stream.Context()
 	sub, err := s.broker.Subscribe(ctx, req.Topic, req.SubscriberID, req.SubscriberName)
 	if err != nil {

@@ -88,8 +88,8 @@ func (t *Topic) PublishEvent(event *proto.Event) {
 }
 
 func (t *Topic) AddSubscriber(ctx context.Context, id string, name string) (*Subscriber, error) {
-	t.SubscriberRepository.Lock()
-	defer t.SubscriberRepository.Unlock()
+	// t.SubscriberRepository.Lock()
+	// defer t.SubscriberRepository.Unlock()
 
 	s, err := t.SubscriberRepository.addSubscriber(ctx, id, name, t.Name)
 	if err != nil {

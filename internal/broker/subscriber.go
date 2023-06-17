@@ -64,13 +64,14 @@ func NewSubscriberRepository() *SubscriberRepository {
 }
 
 func (r *SubscriberRepository) addSubscriber(ctx context.Context, id string, subName string, topicName string) (*Subscriber, error) {
+	r.Lock()
+	defer r.Unlock()
 	if r.Subscribers[id] != nil {
 		return nil, status.Error(codes.AlreadyExists, "Already Exists")
 	}
 
 	s := NewSubscriber(ctx, id, subName, topicName)
 	r.Subscribers[id] = s
-
 	return s, nil
 }
 

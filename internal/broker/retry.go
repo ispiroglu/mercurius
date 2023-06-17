@@ -2,6 +2,7 @@ package broker
 
 import (
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/ispiroglu/mercurius/internal/logger"
@@ -24,32 +25,49 @@ const retryTimeType = time.Second
 var SubscriberRetryHandler = NewRetryHandler()
 
 type RetryHandler struct {
-	bufferSize  int
-	RetryQueues map[string]chan *proto.Event
+	bufferSize int
+	repository *RetryMapRepository
+	logger     *zap.Logger
+}
+
+type RetryMapRepository struct {
+	sync.RWMutex
 	logger      *zap.Logger
+	RetryQueues map[string]chan *proto.Event
+}
+
+func NewRetryMapRepository() *RetryMapRepository {
+	return &RetryMapRepository{
+		RWMutex:     sync.RWMutex{},
+		logger:      &zap.Logger{},
+		RetryQueues: map[string]chan *proto.Event{},
+	}
 }
 
 func NewRetryHandler() *RetryHandler {
 	return &RetryHandler{
-		bufferSize:  retryBufferSize,
-		RetryQueues: make(map[string]chan *proto.Event),
-		logger:      logger.NewLogger(),
+		bufferSize: retryBufferSize,
+		repository: NewRetryMapRepository(),
+		logger:     logger.NewLogger(),
 	}
 }
 
 func (rh *RetryHandler) RemoveRetryQueue(subId string) {
-	delete(rh.RetryQueues, subId)
+	rh.repository.Lock()
+	defer rh.repository.Unlock()
+
+	delete(rh.repository.RetryQueues, subId)
 }
 
 func (rh *RetryHandler) CreateRetryQueue(subId string, eq chan *proto.Event) chan *proto.Event {
 	rq := make(chan *proto.Event, retryBufferSize)
-	rh.RetryQueues[subId] = rq
+	rh.repository.addChannel(subId, rq)
 	go rh.HandleRetryQueue(rq, eq)
 	return rq
 }
 
 func GetRetryQueue(subId string) chan *proto.Event {
-	return SubscriberRetryHandler.RetryQueues[subId]
+	return SubscriberRetryHandler.repository.RetryQueues[subId]
 }
 
 // TODO remove entry from map
@@ -72,4 +90,11 @@ func (rh *RetryHandler) HandleRetryQueue(rq chan *proto.Event, eq chan *proto.Ev
 			}()
 		}
 	}
+}
+
+func (r *RetryMapRepository) addChannel(sId string, c chan *proto.Event) {
+	r.Lock()
+	defer r.Unlock()
+
+	r.RetryQueues[sId] = c
 }

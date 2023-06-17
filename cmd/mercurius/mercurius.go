@@ -2,7 +2,7 @@ package main
 
 import (
 	"net"
-	"time"
+	"os"
 
 	"github.com/ispiroglu/mercurius/internal/logger"
 	"go.uber.org/zap"
@@ -18,6 +18,7 @@ const TCP = "tcp"
 var log = logger.NewLogger()
 
 func main() {
+	os.Setenv("GOGC", "10")
 	list, err := net.Listen(TCP, ADDR)
 	if err != nil {
 		log.Fatal("Cannot listen", zap.String("TCP", TCP), zap.String("ADDR", ADDR), zap.Error(err))
@@ -29,10 +30,10 @@ func main() {
 
 	proto.RegisterMercuriusServer(grpcServer, server)
 
-	go func() {
-		time.Sleep(10 * time.Second)
-		grpcServer.GracefulStop()
-	}()
+	// go func() {
+	// 	time.Sleep(10 * time.Second)
+	// 	grpcServer.GracefulStop()
+	// }()
 
 	if err := grpcServer.Serve(list); err != nil {
 		log.Fatal("Failed to serve", zap.Error(err))
