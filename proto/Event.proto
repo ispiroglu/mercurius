@@ -23,9 +23,16 @@ message SubscribeRequest {
   google.protobuf.Timestamp createdAt = 4;
 }
 
+message RetryRequest {
+  string subscriberID = 1;
+  Event event = 2;
+  google.protobuf.Timestamp createdAt = 3;
+}
+
 message ACK {}
 
 service Mercurius {
   rpc Publish (Event) returns (ACK);
   rpc Subscribe (SubscribeRequest) returns (stream Event);
+  rpc Retry (RetryRequest) returns (ACK);
 }

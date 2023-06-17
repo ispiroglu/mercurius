@@ -64,7 +64,7 @@ func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_S
 
 			return nil
 		case event := <-sub.EventChannel:
-			if rand.Intn(1) == 0 {
+			if rand.Intn(654) == 0 {
 				s.logger.Error("Simulated error")
 				sub.RetryQueue <- event
 			} else if err := stream.Send(event); err != nil {
@@ -74,4 +74,10 @@ func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_S
 			}
 		}
 	}
+}
+
+func (s *Server) Retry(_ context.Context, req *proto.RetryRequest) (*proto.ACK, error) {
+	s.logger.Info("Received retry request")
+	s.broker.SubscriberRepository.Subscribers[req.SubscriberID].RetryQueue <- req.Event
+	return &proto.ACK{}, nil
 }

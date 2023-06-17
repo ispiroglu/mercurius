@@ -2,6 +2,7 @@ package broker
 
 import (
 	"context"
+
 	"github.com/ispiroglu/mercurius/internal/logger"
 	pb "github.com/ispiroglu/mercurius/proto"
 	"go.uber.org/zap"
@@ -12,6 +13,7 @@ import (
 type Broker struct {
 	logger *zap.Logger
 	*TopicRepository
+	SubscriberRepository *SubscriberRepository
 }
 
 type IBroker interface {
@@ -21,8 +23,9 @@ type IBroker interface {
 
 func NewBroker() *Broker {
 	return &Broker{
-		logger:          logger.NewLogger(),
-		TopicRepository: NewTopicRepository(),
+		logger:               logger.NewLogger(),
+		TopicRepository:      NewTopicRepository(),
+		SubscriberRepository: NewSubscriberRepository(),
 	}
 }
 
@@ -51,6 +54,7 @@ func (b *Broker) Subscribe(ctx context.Context, topicName string, sId string, sN
 		b.logger.Error("Broker could not add subscriber to topic", zap.String("Topic", topicName), zap.String("SubscriberID", sId)) //, zap.Error(err))
 		return nil, err
 	}
+	b.SubscriberRepository.addSub(s)
 	return s, nil
 }
 

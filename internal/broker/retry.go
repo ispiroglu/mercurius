@@ -52,17 +52,21 @@ func GetRetryQueue(subId string) chan *proto.Event {
 	return SubscriberRetryHandler.RetryQueues[subId]
 }
 
+// TODO remove entry from map
 func (rh *RetryHandler) HandleRetryQueue(rq chan *proto.Event, eq chan *proto.Event) {
 	eventRetryCount := make(map[string]int)
 	for {
 		event := <-rq
 		eventRetryCount[event.Id]++
-		if eventRetryCount[event.Id] == retryCount {
-			rh.logger.Info("Discarding event " + event.Id + " maximum retries reached")
+		if eventRetryCount[event.Id] == -1 {
 			delete(eventRetryCount, event.Id)
+			rh.logger.Info("Discarded event " + event.Id + " retry limit reached")
 		} else {
 			rh.logger.Info("Retrying for event " + event.Id + " [" + strconv.Itoa(eventRetryCount[event.Id]) + "]")
 			go func() {
+				if eventRetryCount[event.Id] == retryCount {
+					eventRetryCount[event.Id] = -2
+				}
 				time.Sleep(retryTime * retryTimeType)
 				eq <- event
 			}()
