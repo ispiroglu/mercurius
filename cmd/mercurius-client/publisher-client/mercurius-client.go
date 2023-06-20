@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	logger2 "github.com/ispiroglu/mercurius/internal/logger"
@@ -16,6 +18,8 @@ const TopicName = "one-to-one"
 const CLIENT_NAME = "Sample Client"
 
 var logger = logger2.NewLogger()
+var messageCount = atomic.Uint64{}
+var N = 10
 
 func main() {
 	c, err := client.NewClient(CLIENT_NAME, ADDR)
@@ -23,23 +27,24 @@ func main() {
 		logger.Error("Err", zap.Error(err))
 	}
 
-	cc := 50
+	logger.Info("Published Event")
 
 	wg := sync.WaitGroup{}
-	wg.Add(cc)
-	for j := 0; j < cc; j++ {
-		go func(w *sync.WaitGroup, j int) {
-			for i := 0; i < 100; i++ {
-				body := []byte(fmt.Sprintf("This is the sample message: %d", j*100+i))
-				fmt.Println(string(body))
-				if err := c.Publish(TopicName, body, context.Background()); err != nil {
+	wg.Add(N)
+	for i := 0; i < N; i++ {
+		go func(w *sync.WaitGroup) {
+			for j := 0; j < 10; j++ {
+				if err := c.Publish(TopicName, []byte(strconv.FormatUint(messageCount.Load(), 10)), context.Background()); err != nil {
 					logger.Error("Err", zap.Error(err))
 				}
-				time.Sleep(500 * time.Microsecond)
+				fmt.Println(strconv.FormatUint(messageCount.Load(), 10))
+
+				messageCount.Add(1)
 			}
 			w.Done()
-		}(&wg, j)
+		}(&wg)
 	}
 
 	wg.Wait()
+	time.Sleep(1 * time.Hour)
 }

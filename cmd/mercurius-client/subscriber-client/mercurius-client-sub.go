@@ -15,19 +15,19 @@ import (
 const ADDR = "0.0.0.0:9000"
 const TopicName = "one-to-one"
 const CLIENT_NAME = "Sample Client"
+const N = 10 * 10 * 10
 
 var messageCount = atomic.Uint64{}
 var start time.Time = time.Time{}
 var logger = k.NewLogger()
 var ctx, cancel = context.WithCancel(context.Background())
-var totalMessageCount = uint64(100 * 50 * 50)
 
 func main() {
 	c, err := client.NewClient(CLIENT_NAME, ADDR)
 	if err != nil {
 		logger.Error("Err", zap.Error(err))
 	}
-	for i := 0; i < 50; i++ {
+	for i := 0; i < 10; i++ {
 		go func() {
 			if err := c.Subscribe(TopicName, ctx, handler); err != nil {
 				logger.Error("Err", zap.Error(err))
@@ -40,16 +40,12 @@ ConsumerLoop:
 	for {
 		select {
 		case <-timer.C:
-			// Stop consuming messages when the timer expires
 			cancel()
 			break ConsumerLoop
 
 		}
 	}
 
-	fmt.Printf("Consumed %d messages\n", messageCount.Load())
-	z := time.Since(start)
-	fmt.Println("Execution time: ", z)
 }
 
 func handler(e *proto.Event) error {
@@ -57,10 +53,9 @@ func handler(e *proto.Event) error {
 	if messageCount.Load() == 1 {
 		start = time.Now()
 	}
-	if messageCount.Load() == totalMessageCount {
+	if messageCount.Load() == N {
 		z := time.Since(start)
 		fmt.Println("Execution time: ", z)
 	}
-	fmt.Println(messageCount.Load())
 	return nil
 }
