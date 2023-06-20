@@ -14,12 +14,14 @@ import (
 )
 
 const ADDR = "0.0.0.0:9000"
-const TopicName = "one-to-one"
-const MessageCount = 500
+const TopicName = "top"
+const MessageCount = 1000
+const n = 10
 
-var testMap map[string]bool = make(map[string]bool)
+var testMapOneOne = make(map[string]bool)
+var testMapNOne = make(map[string]bool)
 
-func TestMessageAuthenticity(t *testing.T) {
+func TestOneOneMessageReliability(t *testing.T) {
 	t.Run("Messages sent and received should be the same", func(t *testing.T) {
 		var controlMap = make(map[string]bool)
 
@@ -31,22 +33,54 @@ func TestMessageAuthenticity(t *testing.T) {
 
 		cSub, _ := client.NewClient("sub", ADDR)
 
-		cSub.Subscribe(TopicName, context.Background(), authenticityHandler)
+		cSub.Subscribe(TopicName, context.Background(), authenticityHandlerOneOne)
 
 		for i := 0; i < MessageCount; i++ {
 			cPub.Publish(TopicName, []byte(fmt.Sprintf("%d", i)), context.Background())
 		}
 
-		time.Sleep(1 * time.Second)
-		fmt.Println(testMap)
-		fmt.Println(controlMap)
+		time.Sleep(3 * time.Second)
 
-		assert.Equal(t, true, reflect.DeepEqual(testMap, controlMap))
+		assert.Equal(t, true, reflect.DeepEqual(testMapOneOne, controlMap))
 	})
 
 }
 
-func authenticityHandler(e *proto.Event) error {
-	testMap[string(e.Body)] = true
+func TestNOneMessageReliability(t *testing.T) {
+	t.Run("Messages sent and received should be the same", func(t *testing.T) {
+		var controlMap = make(map[string]bool)
+
+		for i := 0; i < MessageCount; i++ {
+			controlMap[strconv.Itoa(i)] = true
+		}
+
+		cPub, _ := client.NewClient("pub", ADDR)
+
+		cSub, _ := client.NewClient("sub", ADDR)
+
+		cSub.Subscribe(TopicName, context.Background(), authenticityHandlerNOne)
+
+		for i := 0; i < MessageCount; i++ {
+			if i%(MessageCount/n) == 0 {
+				cPub, _ = client.NewClient("pub", ADDR)
+				fmt.Println("Changed publisher")
+			}
+			cPub.Publish(TopicName, []byte(fmt.Sprintf("%d", i)), context.Background())
+		}
+
+		time.Sleep(3 * time.Second)
+
+		assert.Equal(t, true, reflect.DeepEqual(testMapOneOne, controlMap))
+	})
+
+}
+
+func authenticityHandlerOneOne(e *proto.Event) error {
+	testMapOneOne[string(e.Body)] = true
+	return nil
+}
+
+func authenticityHandlerNOne(e *proto.Event) error {
+	testMapNOne[string(e.Body)] = true
 	return nil
 }
