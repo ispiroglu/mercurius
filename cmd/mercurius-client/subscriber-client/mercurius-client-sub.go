@@ -15,7 +15,7 @@ import (
 const ADDR = "0.0.0.0:9000"
 const TopicName = "one-to-one"
 const CLIENT_NAME = "Sample Client"
-const N = 10 * 10 * 10
+const N = 100 * 100 * 100
 
 var messageCount = atomic.Uint64{}
 var start time.Time = time.Time{}
@@ -27,7 +27,7 @@ func main() {
 	if err != nil {
 		logger.Error("Err", zap.Error(err))
 	}
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 100; i++ {
 		go func() {
 			if err := c.Subscribe(TopicName, ctx, handler); err != nil {
 				logger.Error("Err", zap.Error(err))

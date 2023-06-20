@@ -2,16 +2,12 @@ package server
 
 import (
 	"context"
-	"runtime"
-	"sync/atomic"
-
 	"github.com/ispiroglu/mercurius/internal/broker"
 	"github.com/ispiroglu/mercurius/internal/logger"
 	"github.com/ispiroglu/mercurius/proto"
 	"go.uber.org/zap"
+	"runtime"
 )
-
-var messageCount = atomic.Uint64{}
 
 type Server struct {
 	logger     *zap.Logger

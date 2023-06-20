@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -70,21 +69,15 @@ func TestNOneMessageReliability(t *testing.T) {
 
 		cSub.Subscribe(TopicName, context.Background(), authenticityHandlerNOne)
 
-		wg := sync.WaitGroup{}
-		for j := 0; j < n; j++ {
-			wg.Add(1)
-			go func(j int) {
+		for i := 0; i < MessageCount; i++ {
+			if i%(MessageCount/n) == 0 {
 				cPub, _ = client.NewClient("pub", ADDR)
-				for i := 0; i < MessageCount; i++ {
-
-					cPub.Publish(TopicName, []byte(fmt.Sprintf("%d", (j*100)+i)), context.Background())
-				}
-				wg.Done()
-			}(j)
+				fmt.Println("Changed publisher")
+			}
+			cPub.Publish(TopicName, []byte(fmt.Sprintf("%d", i)), context.Background())
 		}
 
-		wg.Wait()
-
+		time.Sleep(3 * time.Second)
 		assert.Equal(t, true, reflect.DeepEqual(testMapOneOne, controlMap))
 	})
 

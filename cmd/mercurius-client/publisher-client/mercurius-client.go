@@ -19,7 +19,7 @@ const CLIENT_NAME = "Sample Client"
 
 var logger = logger2.NewLogger()
 var messageCount = atomic.Uint64{}
-var N = 10
+var N = 100
 
 func main() {
 	c, err := client.NewClient(CLIENT_NAME, ADDR)
@@ -33,7 +33,7 @@ func main() {
 	wg.Add(N)
 	for i := 0; i < N; i++ {
 		go func(w *sync.WaitGroup) {
-			for j := 0; j < 10; j++ {
+			for j := 0; j < 100; j++ {
 				if err := c.Publish(TopicName, []byte(strconv.FormatUint(messageCount.Load(), 10)), context.Background()); err != nil {
 					logger.Error("Err", zap.Error(err))
 				}
