@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	logger2 "github.com/ispiroglu/mercurius/internal/logger"
@@ -22,12 +23,23 @@ func main() {
 		logger.Error("Err", zap.Error(err))
 	}
 
-	for j := 0; j < 500; j++ {
-		if err := c.Publish(TopicName, []byte(fmt.Sprintf("This is the sample message: %d", j)), context.Background()); err != nil {
-			logger.Error("Err", zap.Error(err))
-		}
+	cc := 50
 
-		time.Sleep(1 * time.Second)
+	wg := sync.WaitGroup{}
+	wg.Add(cc)
+	for j := 0; j < cc; j++ {
+		go func(w *sync.WaitGroup, j int) {
+			for i := 0; i < 100; i++ {
+				body := []byte(fmt.Sprintf("This is the sample message: %d", j*100+i))
+				fmt.Println(string(body))
+				if err := c.Publish(TopicName, body, context.Background()); err != nil {
+					logger.Error("Err", zap.Error(err))
+				}
+				time.Sleep(500 * time.Microsecond)
+			}
+			w.Done()
+		}(&wg, j)
 	}
 
+	wg.Wait()
 }

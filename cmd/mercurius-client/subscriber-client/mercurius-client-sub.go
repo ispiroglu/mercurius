@@ -20,33 +20,28 @@ var messageCount = atomic.Uint64{}
 var start time.Time = time.Time{}
 var logger = k.NewLogger()
 var ctx, cancel = context.WithCancel(context.Background())
+var totalMessageCount = uint64(100 * 50 * 50)
 
 func main() {
 	c, err := client.NewClient(CLIENT_NAME, ADDR)
 	if err != nil {
 		logger.Error("Err", zap.Error(err))
 	}
-	for i := 0; i < 5000; i++ {
+	for i := 0; i < 50; i++ {
 		go func() {
 			if err := c.Subscribe(TopicName, ctx, handler); err != nil {
 				logger.Error("Err", zap.Error(err))
 			}
 		}()
 	}
-	fmt.Println("Anne Bitti")
 
 	timer := time.NewTimer(900 * time.Second)
-
-	// Count of consumed messages
-
-	// Consume messages until the timer expires
-
 ConsumerLoop:
 	for {
 		select {
 		case <-timer.C:
 			// Stop consuming messages when the timer expires
-			// cancel()
+			cancel()
 			break ConsumerLoop
 
 		}
@@ -62,10 +57,10 @@ func handler(e *proto.Event) error {
 	if messageCount.Load() == 1 {
 		start = time.Now()
 	}
-	if messageCount.Load() == 500*5000 {
+	if messageCount.Load() == totalMessageCount {
 		z := time.Since(start)
 		fmt.Println("Execution time: ", z)
 	}
-	// fmt.Println(string(e.Body))
+	fmt.Println(messageCount.Load())
 	return nil
 }

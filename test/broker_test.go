@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -38,9 +39,11 @@ func TestOneOneMessageReliability(t *testing.T) {
 	cPub, _ := client.NewClient("pub", ADDR)
 
 	cSub, _ := client.NewClient("sub", ADDR)
+	ctx, cancel := context.WithCancel(context.Background())
+
 	t.Run("Messages sent and received should be the same", func(t *testing.T) {
 
-		cSub.Subscribe(TopicName, context.Background(), authenticityHandlerOneOne)
+		cSub.Subscribe(TopicName, ctx, authenticityHandlerOneOne)
 
 		for i := 0; i < MessageCount; i++ {
 			cPub.Publish(TopicName, []byte(fmt.Sprintf("%d", i)), context.Background())
@@ -50,14 +53,14 @@ func TestOneOneMessageReliability(t *testing.T) {
 
 		assert.Equal(t, true, reflect.DeepEqual(testMapOneOne, controlMap))
 	})
-
+	t.Cleanup(cancel)
 }
 
 func TestNOneMessageReliability(t *testing.T) {
 	t.Run("Messages sent and received should be the same", func(t *testing.T) {
 		var controlMap = make(map[string]bool)
 
-		for i := 0; i < MessageCount; i++ {
+		for i := 0; i < MessageCount*n; i++ {
 			controlMap[strconv.Itoa(i)] = true
 		}
 
@@ -67,15 +70,20 @@ func TestNOneMessageReliability(t *testing.T) {
 
 		cSub.Subscribe(TopicName, context.Background(), authenticityHandlerNOne)
 
-		for i := 0; i < MessageCount; i++ {
-			if i%(MessageCount/n) == 0 {
+		wg := sync.WaitGroup{}
+		for j := 0; j < n; j++ {
+			wg.Add(1)
+			go func(j int) {
 				cPub, _ = client.NewClient("pub", ADDR)
-				fmt.Println("Changed publisher")
-			}
-			cPub.Publish(TopicName, []byte(fmt.Sprintf("%d", i)), context.Background())
+				for i := 0; i < MessageCount; i++ {
+
+					cPub.Publish(TopicName, []byte(fmt.Sprintf("%d", (j*100)+i)), context.Background())
+				}
+				wg.Done()
+			}(j)
 		}
 
-		time.Sleep(3 * time.Second)
+		wg.Wait()
 
 		assert.Equal(t, true, reflect.DeepEqual(testMapOneOne, controlMap))
 	})
@@ -98,6 +106,7 @@ func TestMessageResendRequest(t *testing.T) {
 func authenticityHandlerOneOne(e *proto.Event) error {
 	testMapOneOne[string(e.Body)] = true
 	messageCountOneOne.Add(1)
+	fmt.Println(messageCountOneOne.Load())
 	if messageCountOneOne.Load() == MessageCount {
 		doneOneOne <- true
 	}

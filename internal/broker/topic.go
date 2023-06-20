@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"sync/atomic"
 
 	"github.com/ispiroglu/mercurius/internal/logger"
 	"go.uber.org/zap"
@@ -17,10 +16,9 @@ import (
 type Topic struct {
 	sync.RWMutex
 	logger               *zap.Logger
-	Name                 string                // IDs must be Unique
-	SubscriberRepository *SubscriberRepository // TODO: How should we add or remove subscribers?
+	Name                 string                
+	SubscriberRepository *SubscriberRepository 
 	EventChan            chan *proto.Event
-	EventCount           *atomic.Uint64
 }
 
 type TopicRepository struct {
@@ -46,7 +44,7 @@ func NewTopicRepository() *TopicRepository {
 func (r *TopicRepository) GetTopic(name string) (*Topic, error) {
 	topic, exist := r.Topics[name]
 	if !exist {
-		//r.logger.Warn("Could not found topic", zap.String("Topic", name))
+		r.logger.Warn("Could not found topic", zap.String("Topic", name))
 		return nil, status.Error(codes.NotFound, "cannot found the topic called:"+name)
 	}
 
@@ -59,7 +57,7 @@ func (r *TopicRepository) CreateTopic(name string) (*Topic, error) {
 
 	_, err := r.GetTopic(name)
 	if err == nil {
-		//r.logger.Warn("Cannot create the topic that already exists", zap.String("Topic", name))
+		r.logger.Warn("Cannot create the topic that already exists", zap.String("Topic", name))
 		return nil, status.Error(codes.AlreadyExists, "there is already a topic named:"+name)
 	}
 
@@ -70,26 +68,22 @@ func (r *TopicRepository) CreateTopic(name string) (*Topic, error) {
 }
 
 func (t *Topic) PublishEvent(event *proto.Event) {
-	// TODO: What else need to be done for Publishing at Topic Level?
 
 	if len(t.SubscriberRepository.Subscribers) == 0 {
-		t.EventCount.Add(1)
 		t.EventChan <- event
 	} else {
-
+		t.SubscriberRepository.Lock()
+		defer t.SubscriberRepository.Unlock()
 		for _, s := range t.SubscriberRepository.Subscribers {
 			go func(s *Subscriber, event *proto.Event) {
 				s.logger.Info("Sending event to subscriber", zap.String("Topic", event.Topic), zap.String("SubscriberID", s.Id), zap.String("Subscriber name", s.Name))
 				s.EventChannel <- event
-				t.EventCount.Add(1)
 			}(s, event)
 		}
 	}
 }
 
 func (t *Topic) AddSubscriber(ctx context.Context, id string, name string) (*Subscriber, error) {
-	// t.SubscriberRepository.Lock()
-	// defer t.SubscriberRepository.Unlock()
 
 	s, err := t.SubscriberRepository.addSubscriber(ctx, id, name, t.Name)
 	if err != nil {
@@ -127,7 +121,6 @@ func newTopic(name string) *Topic {
 		logger:               logger.NewLogger(),
 		Name:                 name,
 		SubscriberRepository: NewSubscriberRepository(),
-		EventChan:            make(chan *proto.Event, 100), // TODO: Should this be buffered? Or should we consider asynchrony in upper layer?
-		EventCount:           &atomic.Uint64{},
+		EventChan:            make(chan *proto.Event, 5000),
 	}
 }

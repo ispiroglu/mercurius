@@ -30,7 +30,7 @@ func NewBroker() *Broker {
 }
 
 func (b *Broker) Publish(event *pb.Event) (*pb.ACK, error) {
-	// b.logger.Info("Broker received event for publishing", zap.String("Topic", event.Topic))
+	b.logger.Info("Broker received event for publishing", zap.String("Topic", event.Topic))
 
 	t, err := b.findOrInsertTopic(event.Topic)
 	if err != nil {
@@ -42,7 +42,7 @@ func (b *Broker) Publish(event *pb.Event) (*pb.ACK, error) {
 }
 
 func (b *Broker) Subscribe(ctx context.Context, topicName string, sId string, sName string) (*Subscriber, error) {
-	// b.logger.Info("Broker received subscription request", zap.String("Topic", topicName), zap.String("SubscriberID", sId))
+	b.logger.Info("Broker received subscription request", zap.String("Topic", topicName), zap.String("SubscriberID", sId))
 
 	t, err := b.findOrInsertTopic(topicName)
 	if err != nil {

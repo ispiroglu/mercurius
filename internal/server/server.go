@@ -18,34 +18,21 @@ type Server struct {
 	broker     *broker.Broker
 	RetryQueue chan *proto.Event
 	proto.UnimplementedMercuriusServer
-	GetCount  *atomic.Uint64
-	SendCount *atomic.Uint64
 }
 
 func NewMercuriusServer() *Server {
 	return &Server{
-		logger:    logger.NewLogger(),
-		broker:    broker.NewBroker(),
-		SendCount: &atomic.Uint64{},
-		GetCount:  &atomic.Uint64{},
+		logger: logger.NewLogger(),
+		broker: broker.NewBroker(),
 	}
 }
 
-// Publish TODO: Why are we abstracting the publishing at server level and broker level??
-// When we switch to multiple broker implementation we will need this.
-// We should handle the ctx here.
 func (s *Server) Publish(_ context.Context, event *proto.Event) (*proto.ACK, error) {
-	// s.logger.Info("Geldi", zap.String("count", string(event.Body)))
-	s.GetCount.Add(1)
-
-	// s.logger.Info("", zap.Int("SAA", runtime.NumGoroutine()))
-
 	return s.broker.Publish(event)
-	// return &proto.ACK{}, nil
 }
 
 func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_SubscribeServer) error {
-	// s.logger.Info("Received subscribe request", zap.String("Topic", req.Topic))
+	s.logger.Info("Received subscribe request", zap.String("Topic", req.Topic))
 	ctx := stream.Context()
 	sub, err := s.broker.Subscribe(ctx, req.Topic, req.SubscriberID, req.SubscriberName)
 	if err != nil {
@@ -53,22 +40,11 @@ func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_S
 		return err
 	}
 
-	// TODO: Who is the subscriber? How to handle fan outs??
-	// TODO: How to implement done channel? Should we implement?
-	// TODO: Should we run this for block in a goroutine? -> !This gives an error! Why
-
-	/*////////////////////
-	    |  TODO: If the client cannot process it should
-		|  ask for the event again for a later time. Context?
-		////////////////////*/
 	for {
 
 		select {
 		case <-sub.Ctx.Done():
-			// UNSUB
 
-			// Brokers will have subscription map in the future.
-			// So this process will be a broker level
 			broker.SubscriberRetryHandler.RemoveRetryQueue(sub.Id)
 			go func(sub *broker.Subscriber) {
 				s.broker.Unsubscribe(sub)
