@@ -77,7 +77,7 @@ func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_S
 
 			return nil
 		case event := <-sub.EventChannel:
-			go func ()  {
+			go func() {
 				if err := stream.Send(event); err != nil {
 					s.logger.Error("Error on sending event", zap.String("TopicName", event.Topic), zap.String("SubscriberID", req.SubscriberID), zap.String("Subscriber Name", req.SubscriberName)) //, zap.Error(err))
 					s.logger.Info("Sending event to retry queue")

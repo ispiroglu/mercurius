@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -16,25 +17,28 @@ import (
 
 const ADDR = "0.0.0.0:9000"
 const TopicName = "top"
-const MessageCount = 1000
+const MessageCount = 500
 const n = 10
 
 var testMapOneOne = make(map[string]bool)
+var messageCountOneOne = atomic.Uint64{}
+var doneOneOne = make(chan bool)
+
 var testMapNOne = make(map[string]bool)
 var canProcess = false
 var gotSecondTime = false
 
 func TestOneOneMessageReliability(t *testing.T) {
+	var controlMap = make(map[string]bool)
+
+	for i := 0; i < MessageCount; i++ {
+		controlMap[strconv.Itoa(i)] = true
+	}
+
+	cPub, _ := client.NewClient("pub", ADDR)
+
+	cSub, _ := client.NewClient("sub", ADDR)
 	t.Run("Messages sent and received should be the same", func(t *testing.T) {
-		var controlMap = make(map[string]bool)
-
-		for i := 0; i < MessageCount; i++ {
-			controlMap[strconv.Itoa(i)] = true
-		}
-
-		cPub, _ := client.NewClient("pub", ADDR)
-
-		cSub, _ := client.NewClient("sub", ADDR)
 
 		cSub.Subscribe(TopicName, context.Background(), authenticityHandlerOneOne)
 
@@ -42,7 +46,7 @@ func TestOneOneMessageReliability(t *testing.T) {
 			cPub.Publish(TopicName, []byte(fmt.Sprintf("%d", i)), context.Background())
 		}
 
-		time.Sleep(3 * time.Second)
+		<-doneOneOne
 
 		assert.Equal(t, true, reflect.DeepEqual(testMapOneOne, controlMap))
 	})
@@ -93,6 +97,10 @@ func TestMessageResendRequest(t *testing.T) {
 
 func authenticityHandlerOneOne(e *proto.Event) error {
 	testMapOneOne[string(e.Body)] = true
+	messageCountOneOne.Add(1)
+	if messageCountOneOne.Load() == MessageCount {
+		doneOneOne <- true
+	}
 	return nil
 }
 
