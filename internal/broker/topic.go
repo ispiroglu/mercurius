@@ -113,7 +113,6 @@ func (t *Topic) AddSubscriber(ctx context.Context, id string, name string) (*Sub
 	return s, nil
 }
 
-// TODO: REVIEW
 func (r *TopicRepository) Unsubscribe(subscriber *Subscriber) {
 	t := subscriber.TopicName
 	if err := r.Topics[t].SubscriberRepository.Unsubscribe(subscriber); err == nil {
@@ -128,7 +127,7 @@ func newTopic(name string) *Topic {
 		logger:               logger.NewLogger(),
 		Name:                 name,
 		SubscriberRepository: NewSubscriberRepository(),
-		EventChan:            make(chan *proto.Event), // TODO: Should this be buffered? Or should we consider asynchrony in upper layer?
+		EventChan:            make(chan *proto.Event, 100), // TODO: Should this be buffered? Or should we consider asynchrony in upper layer?
 		EventCount:           &atomic.Uint64{},
 	}
 }

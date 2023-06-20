@@ -44,7 +44,7 @@ func (r *SubscriberRepository) Unsubscribe(subscriber *Subscriber) error {
 
 // NewSubscriber Should we handle the channel buffer size here or get at register level?
 func NewSubscriber(ctx context.Context, sId string, sName string, topicName string) *Subscriber {
-	eq := make(chan *proto.Event)
+	eq := make(chan *proto.Event, 100)
 	return &Subscriber{
 		logger:       logger.NewLogger(),
 		Id:           sId,

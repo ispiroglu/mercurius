@@ -2,7 +2,6 @@ package main
 
 import (
 	"net"
-	"os"
 
 	"github.com/ispiroglu/mercurius/internal/logger"
 	"go.uber.org/zap"
@@ -18,7 +17,6 @@ const TCP = "tcp"
 var log = logger.NewLogger()
 
 func main() {
-	os.Setenv("GOGC", "10")
 	list, err := net.Listen(TCP, ADDR)
 	if err != nil {
 		log.Fatal("Cannot listen", zap.String("TCP", TCP), zap.String("ADDR", ADDR), zap.Error(err))

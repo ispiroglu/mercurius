@@ -5,14 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="6dfda440-a30d-449b-8ac9-4670c9afae50" name="Changes" comment="Dockerfile update.">
-      <change afterPath="$PROJECT_DIR$/mercurius" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/x.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/mercurius-client/publisher-client/mercurius-client.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/mercurius-client/publisher-client/mercurius-client.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/mercurius-client/subscriber-client/mercurius-client-sub.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/mercurius-client/subscriber-client/mercurius-client-sub.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/broker/topic.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/broker/topic.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/client/client.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/client/client.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/proto/Event.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/proto/Event.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/proto/Event.proto" beforeDir="false" afterPath="$PROJECT_DIR$/proto/Event.proto" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/server/server.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/server/server.go" afterDir="false" />
     </list>
     <list id="759ff373-b500-4aa5-a8e4-db5078eb5f97" name="do not commit" comment="" />
     <list id="5e459432-155c-4bd6-8f8b-4161478914c0" name="test" comment="" />
@@ -63,26 +59,26 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
-    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;DefaultGoTemplateProperty&quot;: &quot;Go Application&quot;,
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.modules.go.list.on.any.changes.was.set&quot;: &quot;true&quot;,
-    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
-    &quot;go.sdk.automatically.set&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/xpirr/GolandProjects/final-report-comparisons/http-example&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_ADD_EXTERNAL_FILES": "true",
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "DefaultGoTemplateProperty": "Go Application",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.go.formatter.settings.were.checked": "true",
+    "RunOnceActivity.go.migrated.go.modules.settings": "true",
+    "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "git-widget-placeholder": "final",
+    "go.import.settings.migrated": "true",
+    "go.sdk.automatically.set": "true",
+    "last_opened_file_path": "/home/xpirr/GolandProjects/final-report-comparisons/http-example",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "settings.editor.selected.configurable": "preferences.lookFeel"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/../final-report-comparisons/kafka-example/src/subscriber" />
@@ -90,7 +86,7 @@
       <recent name="$PROJECT_DIR$/cmd/mercurius-client/pub" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Build.go build kafka-example/publisher">
+  <component name="RunManager" selected="Go Build.go build mercurius.go">
     <configuration name="go build github.com/ispiroglu/mercurius/cmd" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
       <module name="mercurius" />
       <working_directory value="$PROJECT_DIR$" />
@@ -143,9 +139,9 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Go Build.go build mercurius.go" />
         <item itemvalue="Go Build.go build kafka-example/publisher" />
         <item itemvalue="Go Build.go build kafka-example/subscriber" />
-        <item itemvalue="Go Build.go build mercurius.go" />
         <item itemvalue="Go Build.go build github.com/ispiroglu/mercurius/cmd" />
         <item itemvalue="Docker.Dockerfile" />
       </list>
@@ -205,5 +201,29 @@
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/cmd/mercurius/mercurius.go</url>
+          <line>38</line>
+          <option name="timeStamp" value="7" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/cmd/mercurius/mercurius.go</url>
+          <line>30</line>
+          <option name="timeStamp" value="8" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+    <watches-manager>
+      <configuration name="GoApplicationRunConfiguration">
+        <watch expression="server" />
+      </configuration>
+      <inline-watch fileUrl="file://$PROJECT_DIR$/cmd/mercurius/mercurius.go" line="28">
+        <watch expression="server" />
+      </inline-watch>
+    </watches-manager>
   </component>
 </project>

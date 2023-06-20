@@ -38,10 +38,10 @@ func (s *Server) Publish(_ context.Context, event *proto.Event) (*proto.ACK, err
 	// s.logger.Info("Geldi", zap.String("count", string(event.Body)))
 	s.GetCount.Add(1)
 
-	s.logger.Info("", zap.Int("SAA", runtime.NumGoroutine()))
+	// s.logger.Info("", zap.Int("SAA", runtime.NumGoroutine()))
 
-	// return s.broker.Publish(event)
-	return &proto.ACK{}, nil
+	return s.broker.Publish(event)
+	// return &proto.ACK{}, nil
 }
 
 func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_SubscribeServer) error {
@@ -72,15 +72,18 @@ func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_S
 			broker.SubscriberRetryHandler.RemoveRetryQueue(sub.Id)
 			go func(sub *broker.Subscriber) {
 				s.broker.Unsubscribe(sub)
+				runtime.GC()
 			}(sub)
 
 			return nil
 		case event := <-sub.EventChannel:
-			if err := stream.Send(event); err != nil {
-				s.logger.Error("Error on sending event", zap.String("TopicName", event.Topic), zap.String("SubscriberID", req.SubscriberID), zap.String("Subscriber Name", req.SubscriberName)) //, zap.Error(err))
-				s.logger.Info("Sending event to retry queue")
-				sub.RetryQueue <- event
-			}
+			go func ()  {
+				if err := stream.Send(event); err != nil {
+					s.logger.Error("Error on sending event", zap.String("TopicName", event.Topic), zap.String("SubscriberID", req.SubscriberID), zap.String("Subscriber Name", req.SubscriberName)) //, zap.Error(err))
+					s.logger.Info("Sending event to retry queue")
+					sub.RetryQueue <- event
+				}
+			}()
 		}
 	}
 }
