@@ -2,6 +2,7 @@ package broker_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -20,6 +21,8 @@ const n = 10
 
 var testMapOneOne = make(map[string]bool)
 var testMapNOne = make(map[string]bool)
+var canProcess = false
+var gotSecondTime = false
 
 func TestOneOneMessageReliability(t *testing.T) {
 	t.Run("Messages sent and received should be the same", func(t *testing.T) {
@@ -75,6 +78,19 @@ func TestNOneMessageReliability(t *testing.T) {
 
 }
 
+func TestMessageResendRequest(t *testing.T) {
+	t.Run("Messages should be resent if requested.", func(t *testing.T) {
+		cPub, _ := client.NewClient("pub", ADDR)
+
+		cSub, _ := client.NewClient("sub", ADDR)
+
+		cSub.Subscribe(TopicName, context.Background(), resendHandler)
+		cPub.Publish(TopicName, []byte("message"), context.Background())
+		time.Sleep(1 * time.Second)
+		assert.Equal(t, true, gotSecondTime)
+	})
+}
+
 func authenticityHandlerOneOne(e *proto.Event) error {
 	testMapOneOne[string(e.Body)] = true
 	return nil
@@ -82,5 +98,18 @@ func authenticityHandlerOneOne(e *proto.Event) error {
 
 func authenticityHandlerNOne(e *proto.Event) error {
 	testMapNOne[string(e.Body)] = true
+	return nil
+}
+
+func resendHandler(e *proto.Event) error {
+
+	if !canProcess {
+		canProcess = true
+		fmt.Println("First time")
+		return errors.New("Couldn't process")
+	}
+	fmt.Println("Second time")
+	gotSecondTime = true
+
 	return nil
 }

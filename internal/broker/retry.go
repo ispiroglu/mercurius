@@ -19,8 +19,8 @@ import (
 // This values should be configurable from yml.
 const retryBufferSize = 5000000
 const retryCount = 5
-const retryTime = 1
-const retryTimeType = time.Second
+const retryTime = 100
+const retryTimeType = time.Millisecond
 
 var SubscriberRetryHandler = NewRetryHandler()
 

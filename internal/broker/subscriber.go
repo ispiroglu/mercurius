@@ -12,8 +12,6 @@ import (
 	"go.uber.org/zap"
 )
 
-var bufferSize = 5000
-
 type SubscriberRepository struct {
 	sync.RWMutex
 	logger      *zap.Logger
