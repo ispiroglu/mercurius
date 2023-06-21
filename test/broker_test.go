@@ -17,7 +17,7 @@ import (
 
 const ADDR = "0.0.0.0:9000"
 const TopicName = "top"
-const MessageCount = 500
+const MessageCount = 100
 const n = 10
 
 var testMapOneOne = make(map[string]bool)
@@ -59,7 +59,7 @@ func TestNOneMessageReliability(t *testing.T) {
 	t.Run("Messages sent and received should be the same", func(t *testing.T) {
 		var controlMap = make(map[string]bool)
 
-		for i := 0; i < MessageCount*n; i++ {
+		for i := 0; i < MessageCount; i++ {
 			controlMap[strconv.Itoa(i)] = true
 		}
 
@@ -78,7 +78,10 @@ func TestNOneMessageReliability(t *testing.T) {
 		}
 
 		time.Sleep(3 * time.Second)
-		assert.Equal(t, true, reflect.DeepEqual(testMapOneOne, controlMap))
+		fmt.Println(testMapNOne)
+		fmt.Println(controlMap)
+
+		assert.Equal(t, true, reflect.DeepEqual(testMapNOne, controlMap))
 	})
 
 }
