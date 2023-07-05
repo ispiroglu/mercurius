@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/google/uuid"
 	"github.com/ispiroglu/mercurius/internal/logger"
 	"github.com/ispiroglu/mercurius/pkg/serialize"
@@ -51,6 +52,7 @@ func (client *Client) Subscribe(topicName string, ctx context.Context, fn func(e
 			e, err := subStream.Recv()
 			if err != nil {
 				// TODO: What if cannot receive?
+				l.Error("", zap.Error(err))
 				continue
 			}
 
@@ -65,17 +67,13 @@ func (client *Client) Subscribe(topicName string, ctx context.Context, fn func(e
 	return nil
 }
 
-func (client *Client) Publish(topicName string, body any, ctx context.Context) error {
+func (client *Client) Publish(topicName string, body []byte, ctx context.Context) error {
 	e, err := client.createEvent(topicName, body)
 	if err != nil {
 		return err
 	}
 
-	ack, err := client.c.Publish(ctx, e)
-	if err != nil || ack != nil {
-		return err
-	}
-
+	go client.c.Publish(ctx, e)
 	return nil
 }
 
@@ -102,16 +100,16 @@ func (client *Client) createSubRequest(topicName string) *proto.SubscribeRequest
 	}
 }
 
-func (client *Client) createEvent(topicName string, body any) (*proto.Event, error) {
-	b, err := client.s.Encode(body)
-	if err != nil {
-		l.Error("error while encoding the event", zap.Any("Event", body), zap.Error(err))
-		return nil, errors.New("error while encoding the event")
-	}
+func (client *Client) createEvent(topicName string, body []byte) (*proto.Event, error) {
+	//b, err := client.s.Encode(body)
+	//if err != nil {
+	//	l.Error("error while encoding the event", zap.Any("Event", body), zap.Error(err))
+	//	return nil, errors.New("error while encoding the event")
+	//}
 	e := proto.Event{
 		Id:        uuid.NewString(),
 		Topic:     topicName,
-		Body:      b,
+		Body:      body,
 		CreatedAt: timestamppb.Now(),
 		ExpiresAt: 0, // TODO:
 	}
