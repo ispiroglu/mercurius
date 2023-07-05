@@ -78,8 +78,6 @@ func TestNOneMessageReliability(t *testing.T) {
 		}
 
 		time.Sleep(3 * time.Second)
-		fmt.Println(testMapNOne)
-		fmt.Println(controlMap)
 
 		assert.Equal(t, true, reflect.DeepEqual(testMapNOne, controlMap))
 	})
