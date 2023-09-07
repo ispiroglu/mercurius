@@ -16,8 +16,8 @@ import (
 type Topic struct {
 	sync.RWMutex
 	logger               *zap.Logger
-	Name                 string                
-	SubscriberRepository *SubscriberRepository 
+	Name                 string
+	SubscriberRepository *SubscriberRepository
 	EventChan            chan *proto.Event
 }
 
@@ -75,10 +75,10 @@ func (t *Topic) PublishEvent(event *proto.Event) {
 		t.SubscriberRepository.Lock()
 		defer t.SubscriberRepository.Unlock()
 		for _, s := range t.SubscriberRepository.Subscribers {
-			go func(s *Subscriber, event *proto.Event) {
-				s.logger.Info("Sending event to subscriber", zap.String("Topic", event.Topic), zap.String("SubscriberID", s.Id), zap.String("Subscriber name", s.Name))
-				s.EventChannel <- event
-			}(s, event)
+			//			go func(s *Subscriber, event *proto.Event) {
+			s.logger.Info("Sending event to subscriber", zap.String("Topic", event.Topic), zap.String("SubscriberID", s.Id), zap.String("Subscriber name", s.Name))
+			s.EventChannel <- event
+			//			}(s, event)
 		}
 	}
 }
@@ -121,6 +121,6 @@ func newTopic(name string) *Topic {
 		logger:               logger.NewLogger(),
 		Name:                 name,
 		SubscriberRepository: NewSubscriberRepository(),
-		EventChan:            make(chan *proto.Event, 5000),
+		EventChan:            make(chan *proto.Event),
 	}
 }

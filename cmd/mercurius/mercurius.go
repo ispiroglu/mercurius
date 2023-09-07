@@ -1,7 +1,9 @@
 package main
 
 import (
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net"
+	"net/http"
 
 	"github.com/ispiroglu/mercurius/internal/logger"
 	"go.uber.org/zap"
@@ -33,6 +35,10 @@ func main() {
 	// 	grpcServer.GracefulStop()
 	// }()
 
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(":8081", nil)
+	}()
 	if err := grpcServer.Serve(list); err != nil {
 		log.Fatal("Failed to serve", zap.Error(err))
 	}

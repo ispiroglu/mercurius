@@ -37,7 +37,7 @@ func (b *Broker) Publish(event *pb.Event) (*pb.ACK, error) {
 		return nil, err
 	}
 
-	t.PublishEvent(event)
+	go t.PublishEvent(event)
 	return &pb.ACK{}, nil
 }
 

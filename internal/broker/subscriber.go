@@ -32,16 +32,19 @@ func (r *SubscriberRepository) Unsubscribe(subscriber *Subscriber) error {
 	r.Lock()
 	defer r.Unlock()
 
-	if _, ok := r.Subscribers[subscriber.Id]; !ok {
+	_, ok := r.Subscribers[subscriber.Id]
+	if !ok {
 		return status.Error(codes.NotFound, "Cannot found subscriber at repository.")
 	}
 
+	// close(s.EventChannel)
+	// close(s.RetryQueue)
 	delete(r.Subscribers, subscriber.Id)
 	return nil
 }
 
 func NewSubscriber(ctx context.Context, sId string, sName string, topicName string) *Subscriber {
-	eq := make(chan *proto.Event, 5000)
+	eq := make(chan *proto.Event)
 	return &Subscriber{
 		logger:       logger.NewLogger(),
 		Id:           sId,

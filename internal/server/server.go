@@ -25,6 +25,8 @@ func NewMercuriusServer() *Server {
 
 func (s *Server) Publish(_ context.Context, event *proto.Event) (*proto.ACK, error) {
 	return s.broker.Publish(event)
+
+	// return &proto.ACK{}, nil
 }
 
 func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_SubscribeServer) error {
