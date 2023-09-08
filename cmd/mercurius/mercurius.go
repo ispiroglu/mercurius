@@ -4,11 +4,12 @@ import (
 	"net"
 
 	"github.com/ispiroglu/mercurius/internal/logger"
-	"go.uber.org/zap"
-
 	sv "github.com/ispiroglu/mercurius/internal/server"
 	"github.com/ispiroglu/mercurius/proto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"net/http"
 )
 
 const ADDR = "0.0.0.0:9000"
@@ -28,11 +29,10 @@ func main() {
 
 	proto.RegisterMercuriusServer(grpcServer, server)
 
-	// go func() {
-	// 	time.Sleep(10 * time.Second)
-	// 	grpcServer.GracefulStop()
-	// }()
-
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(":8081", nil)
+	}()
 	if err := grpcServer.Serve(list); err != nil {
 		log.Fatal("Failed to serve", zap.Error(err))
 	}

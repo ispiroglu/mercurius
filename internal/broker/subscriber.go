@@ -41,7 +41,7 @@ func (r *SubscriberRepository) Unsubscribe(subscriber *Subscriber) error {
 }
 
 func NewSubscriber(ctx context.Context, sId string, sName string, topicName string) *Subscriber {
-	eq := make(chan *proto.Event, 5000)
+	eq := make(chan *proto.Event)
 	return &Subscriber{
 		logger:       logger.NewLogger(),
 		Id:           sId,

@@ -1,7 +1,6 @@
 package broker
 
 import (
-	"strconv"
 	"sync"
 	"time"
 
@@ -60,7 +59,7 @@ func (rh *RetryHandler) RemoveRetryQueue(subId string) {
 }
 
 func (rh *RetryHandler) CreateRetryQueue(subId string, eq chan *proto.Event) chan *proto.Event {
-	rq := make(chan *proto.Event, retryBufferSize)
+	rq := make(chan *proto.Event)
 	rh.repository.addChannel(subId, rq)
 	go rh.HandleRetryQueue(rq, eq)
 	return rq
@@ -72,24 +71,24 @@ func GetRetryQueue(subId string) chan *proto.Event {
 
 // TODO remove entry from map
 func (rh *RetryHandler) HandleRetryQueue(rq chan *proto.Event, eq chan *proto.Event) {
-	eventRetryCount := make(map[string]int)
-	for {
-		event := <-rq
-		eventRetryCount[event.Id]++
-		if eventRetryCount[event.Id] == -1 {
-			delete(eventRetryCount, event.Id)
-			rh.logger.Info("Discarded event " + event.Id + " retry limit reached")
-		} else {
-			rh.logger.Info("Retrying for event " + event.Id + " [" + strconv.Itoa(eventRetryCount[event.Id]) + "]")
-			go func() {
-				if eventRetryCount[event.Id] == retryCount {
-					eventRetryCount[event.Id] = -2
-				}
-				time.Sleep(retryTime * retryTimeType)
-				eq <- event
-			}()
-		}
-	}
+	// eventRetryCount := make(map[string]int)
+	// for {
+	// 	event := <-rq
+	// 	eventRetryCount[event.Id]++
+	// 	if eventRetryCount[event.Id] == -1 {
+	// 		delete(eventRetryCount, event.Id)
+	// 		rh.logger.Info("Discarded event " + event.Id + " retry limit reached")
+	// 	} else {
+	// 		rh.logger.Info("Retrying for event " + event.Id + " [" + strconv.Itoa(eventRetryCount[event.Id]) + "]")
+	// 		go func() {
+	// 			if eventRetryCount[event.Id] == retryCount {
+	// 				eventRetryCount[event.Id] = -2
+	// 			}
+	// 			time.Sleep(retryTime * retryTimeType)
+	// 			eq <- event
+	// 		}()
+	// 	}
+	// }
 }
 
 func (r *RetryMapRepository) addChannel(sId string, c chan *proto.Event) {
