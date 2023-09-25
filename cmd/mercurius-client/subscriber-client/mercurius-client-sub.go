@@ -33,6 +33,7 @@ func main() {
 				logger.Error("Err", zap.Error(err))
 			}
 		}()
+
 	}
 
 	timer := time.NewTimer(900 * time.Second)
@@ -49,11 +50,12 @@ ConsumerLoop:
 }
 
 func handler(e *proto.Event) error {
-	messageCount.Add(1)
-	if messageCount.Load() == 1 {
+	x := messageCount.Add(1)
+	if x == 1 {
 		start = time.Now()
 	}
-	if messageCount.Load() == N {
+	fmt.Println(x)
+	if x == N {
 		z := time.Since(start)
 		fmt.Println("Execution time: ", z)
 	}

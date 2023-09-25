@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	logger2 "github.com/ispiroglu/mercurius/internal/logger"
 	"github.com/ispiroglu/mercurius/pkg/client"
@@ -34,19 +33,19 @@ func main() {
 	for i := 0; i < N; i++ {
 		go func(w *sync.WaitGroup) {
 			for j := 0; j < 100; j++ {
-				if err := c.Publish(TopicName, []byte(strconv.FormatUint(messageCount.Load(), 10)), context.Background()); err != nil {
+				x := messageCount.Add(1)
+				if err := c.Publish(TopicName, []byte(strconv.FormatUint(x, 10)), context.Background()); err != nil {
 					logger.Error("Err", zap.Error(err))
 				}
-				fmt.Println(strconv.FormatUint(messageCount.Load(), 10))
-
-				messageCount.Add(1)
+				fmt.Println(strconv.FormatUint(x, 10))
+				//time.Sleep(time.Millisecond)
 			}
 			w.Done()
 		}(&wg)
+		//time.Sleep(200 * time.Second)
 	}
 
 	wg.Wait()
-	time.Sleep(1 * time.Hour)
 }
 
 // package main
