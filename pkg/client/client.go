@@ -67,14 +67,15 @@ func (client *Client) Subscribe(topicName string, ctx context.Context, fn func(e
 	return nil
 }
 
+// Publish This function needs to be sync in order to be able to handle error on publish.
 func (client *Client) Publish(topicName string, body []byte, ctx context.Context) error {
 	e, err := client.createEvent(topicName, body)
 	if err != nil {
 		return err
 	}
 
-	go client.c.Publish(ctx, e)
-	return nil
+	_, err = client.c.Publish(ctx, e)
+	return err
 }
 
 func (client *Client) retry(ctx context.Context, e *proto.Event, subId string) error {
