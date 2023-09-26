@@ -18,7 +18,7 @@ const CLIENT_NAME = "Sample Client"
 const N = 100 * 100 * 100
 
 var messageCount = atomic.Uint64{}
-var start time.Time = time.Time{}
+var start = time.Time{}
 var logger = k.NewLogger()
 var ctx, cancel = context.WithCancel(context.Background())
 
@@ -37,16 +37,7 @@ func main() {
 	}
 
 	timer := time.NewTimer(900 * time.Second)
-ConsumerLoop:
-	for {
-		select {
-		case <-timer.C:
-			cancel()
-			break ConsumerLoop
-
-		}
-	}
-
+	<-timer.C
 }
 
 func handler(e *proto.Event) error {

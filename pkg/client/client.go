@@ -53,10 +53,10 @@ func (client *Client) Subscribe(topicName string, ctx context.Context, fn func(e
 			if err != nil {
 				// TODO: What if cannot receive?
 				l.Error("", zap.Error(err))
+				panic(err)
 				continue
 			}
 
-			l.Info("Received Event", zap.String("Client", client.Name), zap.String("Topic", e.Topic))
 			err = fn(e)
 			if err != nil {
 				_ = client.retry(ctx, e, r.SubscriberID)

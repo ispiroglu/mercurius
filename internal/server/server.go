@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"runtime"
 	"sync/atomic"
+	"time"
 
 	"github.com/ispiroglu/mercurius/internal/broker"
 	"github.com/ispiroglu/mercurius/internal/logger"
@@ -26,7 +27,13 @@ func NewMercuriusServer() *Server {
 	}
 }
 
+var y = atomic.Uint64{}
+
 func (s *Server) Publish(_ context.Context, event *proto.Event) (*proto.ACK, error) {
+	if y.Add(1) == 1 {
+		start = time.Now()
+	}
+
 	return s.broker.Publish(event)
 }
 
@@ -40,6 +47,7 @@ func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_S
 	}
 
 	// This does not changes any time
+
 	for w := 0; w < 1; w++ {
 		go consumerTask(stream, sub, s.logger)
 	}
@@ -47,7 +55,7 @@ func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_S
 	cc := make(chan struct{})
 	<-cc
 
-	for {
+	/* for {
 
 		select {
 		case <-sub.Ctx.Done():
@@ -60,16 +68,26 @@ func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_S
 
 			return nil
 		case event := <-sub.EventChannel:
-			go func() {
-				if err := stream.Send(event); err != nil {
 
+			// time.Sleep(4 * time.Second)
+			go func() {
+				// Send isleminde kalan var
+				if err := stream.Send(event); err != nil {
+					panic("")
 					s.logger.Error("Error on sending event", zap.String("TopicName", event.Topic), zap.String("SubscriberID", sub.Id), zap.String("Subscriber Name", sub.Name)) //, zap.Error(err))
 					s.logger.Info("Sending event to retry queue")
 					sub.RetryQueue <- event
 				}
+
+				x := messageCount.Add(1)
+
+				if x == 100*100*100 {
+					z := time.Since(start)
+					fmt.Println("Execution time: ", z)
+				}
 			}()
 		}
-	}
+	} */
 
 	return nil
 }
@@ -81,6 +99,7 @@ func (s *Server) Retry(_ context.Context, req *proto.RetryRequest) (*proto.ACK, 
 }
 
 var messageCount = atomic.Uint64{}
+var start time.Time
 
 func consumerTask(stream proto.Mercurius_SubscribeServer, sub *broker.Subscriber, logger *zap.Logger) {
 	for {
@@ -96,14 +115,23 @@ func consumerTask(stream proto.Mercurius_SubscribeServer, sub *broker.Subscriber
 
 			return
 		case event := <-sub.EventChannel:
-			fmt.Println("ASDAS", messageCount.Add(1))
+
 			// time.Sleep(4 * time.Second)
 			go func() {
+				// Send isleminde kalan var
 				if err := stream.Send(event); err != nil {
 					panic("")
 					logger.Error("Error on sending event", zap.String("TopicName", event.Topic), zap.String("SubscriberID", sub.Id), zap.String("Subscriber Name", sub.Name)) //, zap.Error(err))
 					logger.Info("Sending event to retry queue")
 					sub.RetryQueue <- event
+				}
+
+				x := messageCount.Add(1)
+
+				if x == 100*100*100 {
+					z := time.Since(start)
+					fmt.Println("Execution time: ", z)
+					panic("")
 				}
 			}()
 		}

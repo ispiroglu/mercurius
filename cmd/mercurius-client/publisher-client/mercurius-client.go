@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	logger2 "github.com/ispiroglu/mercurius/internal/logger"
 	"github.com/ispiroglu/mercurius/pkg/client"
@@ -18,7 +19,8 @@ const CLIENT_NAME = "Sample Client"
 
 var logger = logger2.NewLogger()
 var messageCount = atomic.Uint64{}
-var N = 100
+var N = 100 * 100
+var start time.Time
 
 func main() {
 	c, err := client.NewClient(CLIENT_NAME, ADDR)
@@ -32,10 +34,18 @@ func main() {
 	wg.Add(N)
 	for i := 0; i < N; i++ {
 		go func(w *sync.WaitGroup) {
-			for j := 0; j < 100; j++ {
+			for j := 0; j < 1; j++ {
 				x := messageCount.Add(1)
 				if err := c.Publish(TopicName, []byte(strconv.FormatUint(x, 10)), context.Background()); err != nil {
 					logger.Error("Err", zap.Error(err))
+				}
+				if x == 1 {
+					start = time.Now()
+				}
+				fmt.Println(x)
+				if x == 1000*1000 {
+					z := time.Since(start)
+					fmt.Println("Execution time: ", z)
 				}
 				fmt.Println(strconv.FormatUint(x, 10))
 				//time.Sleep(time.Millisecond)
