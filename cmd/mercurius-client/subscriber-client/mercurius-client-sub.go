@@ -20,7 +20,7 @@ const N = 100 * 100 * 100
 var messageCount = atomic.Uint64{}
 var start = time.Time{}
 var logger = k.NewLogger()
-var ctx, cancel = context.WithCancel(context.Background())
+var ctx, _ = context.WithCancel(context.Background())
 var ch = make(chan struct{})
 
 func main() {

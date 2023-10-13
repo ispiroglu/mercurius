@@ -31,7 +31,7 @@ func main() {
 
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
-		http.ListenAndServe(":8081", nil)
+		_ = http.ListenAndServe(":8081", nil)
 	}()
 	if err := grpcServer.Serve(list); err != nil {
 		log.Fatal("Failed to serve", zap.Error(err))

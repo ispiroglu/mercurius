@@ -54,7 +54,6 @@ func (client *Client) Subscribe(topicName string, ctx context.Context, fn func(e
 				// TODO: What if cannot receive?
 				l.Error("", zap.Error(err))
 				panic(err)
-				continue
 			}
 
 			err = fn(e)

@@ -1,12 +1,10 @@
 package broker
 
 import (
-	"sync"
-	"time"
-
 	"github.com/ispiroglu/mercurius/internal/logger"
 	"github.com/ispiroglu/mercurius/proto"
 	"go.uber.org/zap"
+	"sync"
 )
 
 /*
@@ -17,9 +15,10 @@ import (
 // What should these values be?
 // This values should be configurable from yml.
 const retryBufferSize = 5000000
-const retryCount = 5
-const retryTime = 100
-const retryTimeType = time.Millisecond
+
+// const retryCount = 5
+// const retryTime = 100
+// const retryTimeType = time.Millisecond
 
 var SubscriberRetryHandler = NewRetryHandler()
 
