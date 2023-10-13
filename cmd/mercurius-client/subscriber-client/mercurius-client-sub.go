@@ -21,6 +21,7 @@ var messageCount = atomic.Uint64{}
 var start = time.Time{}
 var logger = k.NewLogger()
 var ctx, cancel = context.WithCancel(context.Background())
+var ch = make(chan struct{})
 
 func main() {
 	c, err := client.NewClient(CLIENT_NAME, ADDR)
@@ -36,8 +37,7 @@ func main() {
 
 	}
 
-	timer := time.NewTimer(900 * time.Second)
-	<-timer.C
+	<-ch
 }
 
 func handler(e *proto.Event) error {
@@ -49,6 +49,7 @@ func handler(e *proto.Event) error {
 	if x == N {
 		z := time.Since(start)
 		fmt.Println("Execution time: ", z)
+		ch <- struct{}{}
 	}
 	return nil
 }

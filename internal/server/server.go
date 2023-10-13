@@ -13,6 +13,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const xz = 100 * 100 * 100
+
 type Server struct {
 	logger     *zap.Logger
 	broker     *broker.Broker
@@ -45,8 +47,6 @@ func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_S
 		s.logger.Error("Error on subscribe", zap.String("Topic", req.Topic), zap.String("SubscriberID", req.SubscriberID), zap.String("Subscriber Name", req.SubscriberName)) //, zap.Error(err))
 		return err
 	}
-
-	// This does not changes any time
 
 	for w := 0; w < 1; w++ {
 		go consumerTask(stream, sub, s.logger)
@@ -119,19 +119,18 @@ func consumerTask(stream proto.Mercurius_SubscribeServer, sub *broker.Subscriber
 			// time.Sleep(4 * time.Second)
 			go func() {
 				// Send isleminde kalan var
+				//fmt.Println(event.Topic)
 				if err := stream.Send(event); err != nil {
 					panic("")
 					logger.Error("Error on sending event", zap.String("TopicName", event.Topic), zap.String("SubscriberID", sub.Id), zap.String("Subscriber Name", sub.Name)) //, zap.Error(err))
 					logger.Info("Sending event to retry queue")
 					sub.RetryQueue <- event
 				}
-
 				x := messageCount.Add(1)
 
-				if x == 100*100*100 {
+				if x == xz {
 					z := time.Since(start)
 					fmt.Println("Execution time: ", z)
-					panic("")
 				}
 			}()
 		}
