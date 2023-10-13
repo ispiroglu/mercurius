@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"runtime"
 	"sync/atomic"
 	"time"
 
@@ -35,12 +34,10 @@ func (s *Server) Publish(_ context.Context, event *proto.Event) (*proto.ACK, err
 	if y.Add(1) == 1 {
 		start = time.Now()
 	}
-
 	return s.broker.Publish(event)
 }
 
 func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_SubscribeServer) error {
-	// s.logger.Info("Received subscribe request", zap.String("Topic", req.Topic))
 	ctx := stream.Context()
 	sub, err := s.broker.Subscribe(ctx, req.Topic, req.SubscriberID, req.SubscriberName)
 	if err != nil {
@@ -110,18 +107,12 @@ func consumerTask(stream proto.Mercurius_SubscribeServer, sub *broker.Subscriber
 			broker.SubscriberRetryHandler.RemoveRetryQueue(sub.Id)
 			go func(sub *broker.Subscriber) {
 				// s.broker.Unsubscribe(sub)
-				runtime.GC()
 			}(sub)
 
 			return
 		case event := <-sub.EventChannel:
-
-			// time.Sleep(4 * time.Second)
 			go func() {
-				// Send isleminde kalan var
-				//fmt.Println(event.Topic)
 				if err := stream.Send(event); err != nil {
-					panic("")
 					logger.Error("Error on sending event", zap.String("TopicName", event.Topic), zap.String("SubscriberID", sub.Id), zap.String("Subscriber Name", sub.Name)) //, zap.Error(err))
 					logger.Info("Sending event to retry queue")
 					sub.RetryQueue <- event
