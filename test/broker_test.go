@@ -42,10 +42,10 @@ func TestOneOneMessageReliability(t *testing.T) {
 
 	t.Run("Messages sent and received should be the same", func(t *testing.T) {
 
-		cSub.Subscribe(TopicName, ctx, authenticityHandlerOneOne)
+		_ = cSub.Subscribe(TopicName, ctx, authenticityHandlerOneOne)
 
 		for i := 0; i < MessageCount; i++ {
-			cPub.Publish(TopicName, []byte(fmt.Sprintf("%d", i)), context.Background())
+			_ = cPub.Publish(TopicName, []byte(fmt.Sprintf("%d", i)), context.Background())
 		}
 
 		<-doneOneOne
@@ -67,14 +67,14 @@ func TestNOneMessageReliability(t *testing.T) {
 
 		cSub, _ := client.NewClient("sub", ADDR)
 
-		cSub.Subscribe(TopicName, context.Background(), authenticityHandlerNOne)
+		_ = cSub.Subscribe(TopicName, context.Background(), authenticityHandlerNOne)
 
 		for i := 0; i < MessageCount; i++ {
 			if i%(MessageCount/n) == 0 {
 				cPub, _ = client.NewClient("pub", ADDR)
 				fmt.Println("Changed publisher")
 			}
-			cPub.Publish(TopicName, []byte(fmt.Sprintf("%d", i)), context.Background())
+			_ = cPub.Publish(TopicName, []byte(fmt.Sprintf("%d", i)), context.Background())
 		}
 
 		time.Sleep(3 * time.Second)
@@ -90,8 +90,8 @@ func TestMessageResendRequest(t *testing.T) {
 
 		cSub, _ := client.NewClient("sub", ADDR)
 
-		cSub.Subscribe(TopicName, context.Background(), resendHandler)
-		cPub.Publish(TopicName, []byte("message"), context.Background())
+		_ = cSub.Subscribe(TopicName, context.Background(), resendHandler)
+		_ = cPub.Publish(TopicName, []byte("message"), context.Background())
 		time.Sleep(1 * time.Second)
 		assert.Equal(t, true, gotSecondTime)
 	})

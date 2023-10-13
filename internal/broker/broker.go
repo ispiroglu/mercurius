@@ -30,14 +30,14 @@ func NewBroker() *Broker {
 }
 
 func (b *Broker) Publish(event *pb.Event) (*pb.ACK, error) {
-	b.logger.Info("Broker received event for publishing", zap.String("Topic", event.Topic))
+	//b.logger.Info("Broker received event for publishing", zap.String("Topic", event.Topic))
 
 	t, err := b.findOrInsertTopic(event.Topic)
 	if err != nil {
 		return nil, err
 	}
 
-	t.PublishEvent(event)
+	go t.PublishEvent(event)
 	return &pb.ACK{}, nil
 }
 

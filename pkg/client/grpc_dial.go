@@ -13,7 +13,8 @@ var (
 
 func getConnection(addr string) *grpc.ClientConn {
 	o.Do(func() {
-		c, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		c, err := grpc.Dial(addr,
+			grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			conn = nil
 		} else {

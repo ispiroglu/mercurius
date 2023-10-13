@@ -1,0 +1,37 @@
+version: "3"
+services:
+
+#  tempo:
+#    image: grafana/tempo:latest
+#    command: [ "-config.file=/etc/tempo.yaml" ]
+#    volumes:
+#      - ./prometheus/tempo.yaml:/etc/tempo.yaml
+#    ports:
+#      - "3200:3200"
+#      - "4318:4318"
+#  loki:
+#      image: grafana/loki:latest
+#      ports:
+#        - "3100:3100"
+#      command: -config.file=/etc/loki/local-config.yaml
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - 9090:9090
+    command:
+      - --web.enable-remote-write-receiver
+      - --enable-feature=exemplar-storage
+    volumes:
+      - ./prometheus/prometheus.yml:/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana:latest
+ #   volumes:
+  #    - ./prometheus/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+      - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor
+    ports:
+      - "3000:3000"

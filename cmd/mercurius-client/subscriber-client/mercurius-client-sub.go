@@ -18,9 +18,10 @@ const CLIENT_NAME = "Sample Client"
 const N = 100 * 100 * 100
 
 var messageCount = atomic.Uint64{}
-var start time.Time = time.Time{}
+var start = time.Time{}
 var logger = k.NewLogger()
-var ctx, cancel = context.WithCancel(context.Background())
+var ctx, _ = context.WithCancel(context.Background())
+var ch = make(chan struct{})
 
 func main() {
 	c, err := client.NewClient(CLIENT_NAME, ADDR)
@@ -33,29 +34,22 @@ func main() {
 				logger.Error("Err", zap.Error(err))
 			}
 		}()
+
 	}
 
-	timer := time.NewTimer(900 * time.Second)
-ConsumerLoop:
-	for {
-		select {
-		case <-timer.C:
-			cancel()
-			break ConsumerLoop
-
-		}
-	}
-
+	<-ch
 }
 
 func handler(e *proto.Event) error {
-	messageCount.Add(1)
-	if messageCount.Load() == 1 {
+	x := messageCount.Add(1)
+	if x == 1 {
 		start = time.Now()
 	}
-	if messageCount.Load() == N {
+	fmt.Println(x)
+	if x == N {
 		z := time.Since(start)
 		fmt.Println("Execution time: ", z)
+		ch <- struct{}{}
 	}
 	return nil
 }
