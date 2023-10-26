@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/ispiroglu/mercurius/internal/logger"
 	"go.uber.org/zap"
@@ -44,7 +46,7 @@ func NewTopicRepository() *TopicRepository {
 func (r *TopicRepository) GetTopic(name string) (*Topic, error) {
 	topic, exist := r.Topics[name]
 	if !exist {
-		r.logger.Warn("Could not found topic", zap.String("Topic", name))
+		//	r.logger.Warn("Could not found topic", zap.String("Topic", name))
 		return nil, status.Error(codes.NotFound, "cannot found the topic called:"+name)
 	}
 
@@ -55,31 +57,45 @@ func (r *TopicRepository) CreateTopic(name string) (*Topic, error) {
 	r.Lock()
 	defer r.Unlock()
 
-	_, err := r.GetTopic(name)
-	if err == nil {
-		r.logger.Warn("Cannot create the topic that already exists", zap.String("Topic", name))
+	if _, err := r.GetTopic(name); err == nil {
+		// r.logger.Warn("Cannot create the topic that already exists", zap.String("Topic", name))
 		return nil, status.Error(codes.AlreadyExists, "there is already a topic named:"+name)
 	}
 
-	r.logger.Info("Creating topic", zap.String("Topic", name))
 	createdTopic := newTopic(name)
 	r.Topics[name] = createdTopic
+
 	return createdTopic, nil
 }
 
-func (t *Topic) PublishEvent(event *proto.Event) {
+var publishCount = uint32(100 * 100)
+var publish = atomic.Uint32{}
+var start time.Time
+var TOTAL = 100 * 100
 
+func (t *Topic) PublishEvent(event *proto.Event) {
 	if len(t.SubscriberRepository.Subscribers) == 0 {
 		t.EventChan <- event
 	} else {
-		t.SubscriberRepository.Lock()
-		defer t.SubscriberRepository.Unlock()
-		for _, s := range t.SubscriberRepository.Subscribers {
-			//go func(s *Subscriber, event *proto.Event) {
-			//s.logger.Info("Sending event to subscriber", zap.String("Topic", event.Topic), zap.String("SubscriberID", s.Id), zap.String("Subscriber name", s.Name))
-			s.EventChannel <- event
-			//}(s, event)
+		publish.Add(1)
+
+		if publish.Load() == uint32(1) {
+			start = time.Now()
 		}
+
+		if publish.Load() == publishCount {
+			fmt.Println("Executionnn Time", time.Since(start))
+		}
+
+		// This line produces a sync wait
+		// as it waits for the previous subscriber to complete its send operation before proceeding to the next subscriber.
+		// maybe a worker pool to minimize this?
+		// One subscribers fullness affects other subscribers.
+		var ts time.Time = time.Now()
+		for _, s := range t.SubscriberRepository.Subscribers {
+			s.EventChannel <- event
+		}
+		fmt.Println("Rotate etmem su kadar surdu", time.Since(ts), len(t.SubscriberRepository.Subscribers))
 	}
 }
 
@@ -92,16 +108,13 @@ func (t *Topic) AddSubscriber(ctx context.Context, id string, name string) (*Sub
 		return nil, status.Error(codes.AlreadyExists, errorMessage)
 	}
 
-	t.logger.Info("Added subscriber", zap.String("Topic", t.Name), zap.String("sId", id), zap.String("sName", name))
+	//t.logger.Info("Added subscriber", zap.String("Topic", t.Name), zap.String("sId", id), zap.String("sName", name))
 	if len(t.SubscriberRepository.Subscribers) == 1 {
-		// go func() {
 		if len(t.EventChan) != 0 {
 			for event := range t.EventChan {
-				s.logger.Info("Sending event to subscriber", zap.String("TopicName", event.Topic), zap.String("SubscriberID", s.Id), zap.String("Subscriber name", s.Name))
 				s.EventChannel <- event
 			}
 		}
-		//}()
 	}
 
 	return s, nil
@@ -109,10 +122,8 @@ func (t *Topic) AddSubscriber(ctx context.Context, id string, name string) (*Sub
 
 func (r *TopicRepository) Unsubscribe(subscriber *Subscriber) {
 	t := subscriber.TopicName
-	if err := r.Topics[t].SubscriberRepository.Unsubscribe(subscriber); err == nil {
-		r.logger.Info("Unsubscription has done",
-			zap.String("TopicName Name", t),
-			zap.String("Subscription ID", subscriber.Id))
+	if err := r.Topics[t].SubscriberRepository.Unsubscribe(subscriber); err != nil {
+		r.logger.Warn("", zap.Error(err))
 	}
 }
 

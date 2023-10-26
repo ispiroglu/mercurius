@@ -41,13 +41,14 @@ func (r *SubscriberRepository) Unsubscribe(subscriber *Subscriber) error {
 }
 
 func NewSubscriber(ctx context.Context, sId string, sName string, topicName string) *Subscriber {
-	eq := make(chan *proto.Event)
+	channelSize := 100 * 100 // This channel size should be configurable.
+	eventChannel := make(chan *proto.Event, channelSize)
 	return &Subscriber{
 		logger:       logger.NewLogger(),
 		Id:           sId,
 		Name:         sName,
-		EventChannel: eq,
-		RetryQueue:   SubscriberRetryHandler.CreateRetryQueue(sId, eq),
+		EventChannel: eventChannel,
+		RetryQueue:   SubscriberRetryHandler.CreateRetryQueue(sId, eventChannel),
 		TopicName:    topicName,
 		Ctx:          ctx,
 	}

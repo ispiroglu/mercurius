@@ -4,13 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
 	"github.com/google/uuid"
 	"github.com/ispiroglu/mercurius/internal/logger"
 	"github.com/ispiroglu/mercurius/pkg/serialize"
 	"github.com/ispiroglu/mercurius/proto"
-
 	"go.uber.org/zap"
+
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -56,10 +55,12 @@ func (client *Client) Subscribe(topicName string, ctx context.Context, fn func(e
 				panic(err)
 			}
 
-			err = fn(e)
-			if err != nil {
-				_ = client.retry(ctx, e, r.SubscriberID)
-			}
+			go func() {
+				err := fn(e)
+				if err != nil {
+					_ = client.retry(ctx, e, r.SubscriberID)
+				}
+			}()
 		}
 	}()
 

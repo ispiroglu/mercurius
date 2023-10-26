@@ -3,13 +3,14 @@ package main
 import (
 	"net"
 
+	"net/http"
+
 	"github.com/ispiroglu/mercurius/internal/logger"
 	sv "github.com/ispiroglu/mercurius/internal/server"
 	"github.com/ispiroglu/mercurius/proto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"net/http"
 )
 
 const ADDR = "0.0.0.0:9000"

@@ -32,6 +32,7 @@ func main() {
 
 	wg := sync.WaitGroup{}
 	wg.Add(N)
+	uintN := uint64(N)
 	for i := 0; i < N; i++ {
 		go func(w *sync.WaitGroup) {
 			for j := 0; j < 1; j++ {
@@ -43,16 +44,16 @@ func main() {
 					start = time.Now()
 				}
 				fmt.Println(x)
-				if x == 1000*1000 {
+				if x == uintN {
 					z := time.Since(start)
 					fmt.Println("Execution time: ", z)
+					panic("")
 				}
 				fmt.Println(strconv.FormatUint(x, 10))
 				//time.Sleep(time.Millisecond)
 			}
 			w.Done()
 		}(&wg)
-		//time.Sleep(200 * time.Second)
 	}
 
 	wg.Wait()
