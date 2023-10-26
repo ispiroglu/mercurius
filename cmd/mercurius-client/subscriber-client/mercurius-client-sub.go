@@ -47,7 +47,7 @@ func handler(e *proto.Event) error {
 	if x == 1 {
 		start = time.Now()
 	}
-	fmt.Println(string(e.Body))
+	// fmt.Println(string(e.Body))
 	if x == N {
 		z := time.Since(start)
 		fmt.Println("Execution time: ", z)

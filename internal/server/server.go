@@ -13,6 +13,11 @@ import (
 )
 
 const totalEventCount = 100 * 100 * 100
+const subscriberBulkEventCount = 100
+
+var y = atomic.Uint64{}
+var messageCount = atomic.Uint64{}
+var start time.Time
 
 type Server struct {
 	logger     *zap.Logger
@@ -28,19 +33,8 @@ func NewMercuriusServer() *Server {
 	}
 }
 
-var y = atomic.Uint64{}
-var messageCount = atomic.Uint64{}
-var start time.Time
-
 func (s *Server) Publish(_ context.Context, event *proto.Event) (*proto.ACK, error) {
-	if y.Add(1) == 1 {
-		start = time.Now()
-	}
-
-	if y.Load() == uint64(100*100) {
-		t := time.Since(start)
-		fmt.Println("Execution time", t)
-	}
+	checkPublishEventCount()
 	return s.broker.Publish(event)
 }
 
@@ -52,15 +46,7 @@ func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_S
 		return err
 	}
 
-	// We cannot make here work with worker pool concurrently because cannot use stream.Send() concurrently.
-	for w := 0; w < 1; w++ {
-		go consumerTask(stream, sub, s.logger)
-	}
-
-	cc := make(chan struct{})
-	<-cc
-
-	return nil
+	return handleEvent(stream, sub, s.logger)
 }
 
 func (s *Server) Retry(_ context.Context, req *proto.RetryRequest) (*proto.ACK, error) {
@@ -68,27 +54,60 @@ func (s *Server) Retry(_ context.Context, req *proto.RetryRequest) (*proto.ACK, 
 	return &proto.ACK{}, nil
 }
 
-func consumerTask(stream proto.Mercurius_SubscribeServer, sub *broker.Subscriber, logger *zap.Logger) {
+// Should move this to subscriber.
+func handleEvent(stream proto.Mercurius_SubscribeServer, sub *broker.Subscriber, logger *zap.Logger) error {
+	eventBuffer := make([]*proto.Event, 0, subscriberBulkEventCount)
 	for {
 		select {
 		case <-sub.Ctx.Done():
-
-			broker.SubscriberRetryHandler.RemoveRetryQueue(sub.Id)
-			go func(sub *broker.Subscriber) {
-				// s.broker.Unsubscribe(sub)
-			}(sub)
-
-			return
+			handleUnsubscribe(sub)
 		case event := <-sub.EventChannel:
-			if err := stream.Send(event); err != nil {
-				logger.Error("Error on sending event", zap.String("Error: ", err.Error()), zap.String("TopicName", event.Topic), zap.String("SubscriberID", sub.Id), zap.String("Subscriber Name", sub.Name)) //, zap.Error(err))
-				sub.RetryQueue <- event
-			}
-			x := messageCount.Add(1)
-			if x == totalEventCount {
-				z := time.Since(start)
-				fmt.Println("Execution time: ", z)
+			checkSentEventCount()
+			eventBuffer = append(eventBuffer, event)
+			if len(eventBuffer) == subscriberBulkEventCount {
+				bulkEvent := &proto.BulkEvent{
+					EventList: eventBuffer,
+				}
+				handleBulkEventSent(bulkEvent, stream, sub)
+				eventBuffer = eventBuffer[:0]
 			}
 		}
+	}
+}
+
+func handleUnsubscribe(sub *broker.Subscriber) error {
+	broker.SubscriberRetryHandler.RemoveRetryQueue(sub.Id)
+	go func(sub *broker.Subscriber) {
+		// s.broker.Unsubscribe(sub)
+	}(sub)
+
+	return nil
+}
+
+func handleBulkEventSent(bulkEvent *proto.BulkEvent, stream proto.Mercurius_SubscribeServer, sub *broker.Subscriber) {
+	if err := stream.Send(bulkEvent); err != nil {
+
+		fmt.Println("Cannot send event. retry!")
+		// sub.logger.Error("Error on sending event", zap.String("Error: ", err.Error()), zap.String("TopicName", event.Topic), zap.String("SubscriberID", sub.Id), zap.String("Subscriber Name", sub.Name)) //, zap.Error(err))
+		// sub.RetryQueue <- event
+	}
+}
+
+func checkPublishEventCount() {
+	if y.Add(1) == 1 {
+		start = time.Now()
+	}
+
+	if y.Load() == uint64(100*100) {
+		t := time.Since(start)
+		fmt.Println("Enterence time Of Events: ", t)
+	}
+}
+
+func checkSentEventCount() {
+	x := messageCount.Add(1)
+	if x == totalEventCount {
+		z := time.Since(start)
+		fmt.Println("Total stream send time: ", z)
 	}
 }

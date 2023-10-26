@@ -84,18 +84,18 @@ func (t *Topic) PublishEvent(event *proto.Event) {
 		}
 
 		if publish.Load() == publishCount {
-			fmt.Println("Executionnn Time", time.Since(start))
+			fmt.Println("Total Routing Time: ", time.Since(start))
 		}
 
 		// This line produces a sync wait
 		// as it waits for the previous subscriber to complete its send operation before proceeding to the next subscriber.
 		// maybe a worker pool to minimize this?
 		// One subscribers fullness affects other subscribers.
-		var ts time.Time = time.Now()
+		// var ts time.Time = time.Now()
 		for _, s := range t.SubscriberRepository.Subscribers {
 			s.EventChannel <- event
 		}
-		fmt.Println("Rotate etmem su kadar surdu", time.Since(ts), len(t.SubscriberRepository.Subscribers))
+		// fmt.Println("Rotate etmem su kadar surdu", time.Since(ts), len(t.SubscriberRepository.Subscribers))
 	}
 }
 

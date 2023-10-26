@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync/atomic"
+
 	"github.com/google/uuid"
 	"github.com/ispiroglu/mercurius/internal/logger"
 	"github.com/ispiroglu/mercurius/pkg/serialize"
@@ -41,6 +43,7 @@ func NewClient(name string, addr string) (*Client, error) {
 
 func (client *Client) Subscribe(topicName string, ctx context.Context, fn func(event *proto.Event) error) error {
 	r := client.createSubRequest(topicName)
+	reqCount := atomic.Uint32{}
 	subStream, err := client.c.Subscribe(ctx, r)
 	if err != nil {
 		return err
@@ -48,7 +51,8 @@ func (client *Client) Subscribe(topicName string, ctx context.Context, fn func(e
 
 	go func() {
 		for {
-			e, err := subStream.Recv()
+			bulkEvent, err := subStream.Recv()
+			fmt.Println("--------------", reqCount.Add(1))
 			if err != nil {
 				// TODO: What if cannot receive?
 				l.Error("", zap.Error(err))
@@ -56,9 +60,8 @@ func (client *Client) Subscribe(topicName string, ctx context.Context, fn func(e
 			}
 
 			go func() {
-				err := fn(e)
-				if err != nil {
-					_ = client.retry(ctx, e, r.SubscriberID)
+				for _, v := range bulkEvent.EventList {
+					go fn(v)
 				}
 			}()
 		}
