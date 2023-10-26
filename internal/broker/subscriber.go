@@ -2,7 +2,10 @@ package broker
 
 import (
 	"context"
+	"fmt"
 	"sync"
+	"sync/atomic"
+	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -11,6 +14,12 @@ import (
 	"github.com/ispiroglu/mercurius/proto"
 	"go.uber.org/zap"
 )
+
+const totalEventCount = 100 * 100 * 100
+const subscriberBulkEventCount = 100 * 100
+
+var messageCount = atomic.Uint64{}
+var _start time.Time
 
 type SubscriberRepository struct {
 	sync.RWMutex
@@ -61,6 +70,34 @@ func NewSubscriberRepository() *SubscriberRepository {
 	}
 }
 
+// Should move this to subscriber.
+func (s *Subscriber) HandleBulkEvent(stream proto.Mercurius_SubscribeServer) error {
+	eventBuffer := make([]*proto.Event, 0, subscriberBulkEventCount)
+	for {
+		select {
+		case <-s.Ctx.Done():
+			return nil
+		case event := <-s.EventChannel:
+			checkSentEventCount()
+			eventBuffer = append(eventBuffer, event)
+			if len(eventBuffer) == subscriberBulkEventCount {
+				bulkEvent := &proto.BulkEvent{
+					EventList: eventBuffer,
+				}
+				s.sendEvent(bulkEvent, stream)
+				eventBuffer = eventBuffer[:0]
+			}
+		}
+	}
+}
+
+func (sub *Subscriber) sendEvent(bulkEvent *proto.BulkEvent, stream proto.Mercurius_SubscribeServer) {
+	if err := stream.Send(bulkEvent); err != nil {
+		sub.logger.Error("Error on sending event", zap.String("Error: ", err.Error()), zap.String("SubscriberID", sub.Id), zap.String("Subscriber Name", sub.Name)) //, zap.Error(err))
+		// sub.RetryQueue <- event
+	}
+}
+
 func (r *SubscriberRepository) addSubscriber(ctx context.Context, id string, subName string, topicName string) (*Subscriber, error) {
 	r.Lock()
 	defer r.Unlock()
@@ -73,8 +110,13 @@ func (r *SubscriberRepository) addSubscriber(ctx context.Context, id string, sub
 	return s, nil
 }
 
-func (r *SubscriberRepository) addSub(s *Subscriber) {
-	r.Lock()
-	defer r.Unlock()
-	r.Subscribers[s.Id] = s
+func checkSentEventCount() {
+	x := messageCount.Add(1)
+	if x == 1 {
+		_start = time.Now()
+	}
+	if x == totalEventCount {
+		z := time.Since(_start)
+		fmt.Println("Total stream send time: ", z)
+	}
 }
