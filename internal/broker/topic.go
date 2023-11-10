@@ -71,7 +71,6 @@ func (r *TopicRepository) CreateTopic(name string) (*Topic, error) {
 var publishCount = uint32(100 * 100)
 var publish = atomic.Uint32{}
 var start time.Time
-var TOTAL = 100 * 100
 
 func (t *Topic) PublishEvent(event *proto.Event) {
 	if len(t.SubscriberRepository.Subscribers) == 0 {
