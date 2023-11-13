@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/google/uuid"
 	"sync/atomic"
 	"time"
+
+	"github.com/google/uuid"
 
 	k "github.com/ispiroglu/mercurius/internal/logger"
 	"github.com/ispiroglu/mercurius/pkg/client"

@@ -39,6 +39,13 @@ func (b *Broker) Publish(event *pb.Event) (*pb.ACK, error) {
 	return &pb.ACK{}, nil
 }
 
+func (b *Broker) Unsubscribe(sub *Subscriber) {
+	b.TopicRepository.Unsubscribe(sub)
+	if err := b.SubscriberRepository.Unsubscribe(sub); err != nil {
+		b.logger.Warn("Failed to unsubscribe subscriber", zap.String("SubscriberID", sub.Id), zap.String("Subscriber Name", sub.Name), zap.Error(err))
+	}
+}
+
 func (b *Broker) Subscribe(ctx context.Context, topicName string, sId string, sName string) (*Subscriber, error) {
 	t, err := b.findOrInsertTopic(topicName)
 	if err != nil {
@@ -47,29 +54,23 @@ func (b *Broker) Subscribe(ctx context.Context, topicName string, sId string, sN
 
 	s, err := t.AddSubscriber(ctx, sId, sName)
 	if err != nil {
-		b.logger.Error("Broker could not add subscriber to topic", zap.String("Topic", topicName), zap.String("SubscriberID", sId)) //, zap.Error(err))
+		b.logger.Error("Broker could not add subscriber to topic", zap.String("Topic", topicName), zap.String("SubscriberID", sId), zap.Error(err))
 		return nil, err
 	}
 	return s, nil
-}
-
-func (b *Broker) Unsubscribe(sub *Subscriber) {
-	b.TopicRepository.Unsubscribe(sub)
-	if err := b.SubscriberRepository.Unsubscribe(sub); err != nil {
-		b.logger.Warn("", zap.Error(err))
-	}
 }
 
 func (b *Broker) findOrInsertTopic(topicName string) (*Topic, error) {
 	t, err := b.GetTopic(topicName)
 	if err != nil {
 		t, err = b.CreateTopic(topicName)
-
-		st, ok := status.FromError(err)
-		if !ok && st.Code() != codes.AlreadyExists {
-			return nil, err
-		} else if st.Code() == codes.AlreadyExists {
-			t, _ = b.GetTopic(topicName)
+		if err != nil {
+			st, ok := status.FromError(err)
+			if !ok && st.Code() != codes.AlreadyExists {
+				return nil, err
+			} else if st.Code() == codes.AlreadyExists {
+				t, _ = b.GetTopic(topicName)
+			}
 		}
 	}
 

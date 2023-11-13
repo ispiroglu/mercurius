@@ -21,7 +21,7 @@ type Client struct {
 	s  *serialize.Serializer
 }
 
-const streamPerSubscriber int = 50
+const streamPerSubscriber int = 20
 
 var l = logger.NewLogger()
 

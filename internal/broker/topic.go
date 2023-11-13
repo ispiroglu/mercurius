@@ -22,57 +22,12 @@ type Topic struct {
 	EventChan            chan *proto.Event
 }
 
-type TopicRepository struct {
-	sync.RWMutex
-	logger *zap.Logger
-	Topics map[string]*Topic
-}
-
-type ITopicRepository interface {
-	GetTopic(string) (*Topic, error)
-	CreateTopic(string) (*Topic, error)
-	PublishEvent(*proto.Event)
-	AddSubscriber(context.Context, string, string) error
-}
-
-func NewTopicRepository() *TopicRepository {
-	return &TopicRepository{
-		logger: logger.NewLogger(),
-		Topics: map[string]*Topic{},
-	}
-}
-
-func (r *TopicRepository) GetTopic(name string) (*Topic, error) {
-	topic, exist := r.Topics[name]
-	if !exist {
-		//	r.logger.Warn("Could not found topic", zap.String("Topic", name))
-		return nil, status.Error(codes.NotFound, "cannot found the topic called:"+name)
-	}
-
-	return topic, nil
-}
-
-func (r *TopicRepository) CreateTopic(name string) (*Topic, error) {
-	r.Lock()
-	defer r.Unlock()
-
-	if _, err := r.GetTopic(name); err == nil {
-		// r.logger.Warn("Cannot create the topic that already exists", zap.String("Topic", name))
-		return nil, status.Error(codes.AlreadyExists, "there is already a topic named:"+name)
-	}
-
-	createdTopic := newTopic(name)
-	r.Topics[name] = createdTopic
-
-	return createdTopic, nil
-}
-
 var publishCount = uint32(100 * 100)
 var publish = atomic.Uint32{}
 var start time.Time
 
 func (t *Topic) PublishEvent(event *proto.Event) {
-	if len(t.SubscriberRepository.StreamPools) == 0 {
+	if t.SubscriberRepository.poolCount.Load() == 0 {
 		t.EventChan <- event
 	} else {
 		publish.Add(1)
@@ -85,15 +40,10 @@ func (t *Topic) PublishEvent(event *proto.Event) {
 			fmt.Println("Total Routing Time: ", time.Since(start))
 		}
 
-		// This line produces a sync wait
-		// as it waits for the previous subscriber to complete its send operation before proceeding to the next subscriber.
-		// maybe a worker pool to minimize this?
-		// One subscribers fullness affects other subscribers.
-		// var ts time.Time = time.Now()
-		for _, s := range t.SubscriberRepository.StreamPools {
-			s.Ch <- event
-		}
-		// fmt.Println("Rotate etmem su kadar surdu", time.Since(ts), len(t.SubscriberRepository.StreamPools))
+		t.SubscriberRepository.StreamPools.Range(func(k any, v interface{}) bool {
+			v.(*StreamPool).Ch <- event
+			return true
+		})
 	}
 }
 
@@ -106,24 +56,7 @@ func (t *Topic) AddSubscriber(ctx context.Context, id string, name string) (*Sub
 		return nil, status.Error(codes.AlreadyExists, errorMessage)
 	}
 
-	// FIRSTY SUBSCRIBED
-	//t.logger.Info("Added subscriber", zap.String("Topic", t.Name), zap.String("sId", id), zap.String("sName", name))
-	// if len(t.SubscriberRepository.StreamPools) == 1 {
-	// 	if len(t.EventChan) != 0 {
-	// 		for event := range t.EventChan {
-	// 			s.EventChannel <- event
-	// 		}
-	// 	}
-	// }
-
 	return s, nil
-}
-
-func (r *TopicRepository) Unsubscribe(subscriber *Subscriber) {
-	t := subscriber.TopicName
-	if err := r.Topics[t].SubscriberRepository.Unsubscribe(subscriber); err != nil {
-		r.logger.Warn("", zap.Error(err))
-	}
 }
 
 func newTopic(name string) *Topic {

@@ -3,12 +3,8 @@ package broker
 import (
 	"context"
 	"fmt"
-	"sync"
 	"sync/atomic"
 	"time"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"github.com/ispiroglu/mercurius/internal/logger"
 	"github.com/ispiroglu/mercurius/proto"
@@ -16,18 +12,13 @@ import (
 )
 
 const totalEventCount = 100 * 100 * 100
+const channelSize = 1
 
 // const subscriberBulkEventCount = 100 * 100
 const subscriberBulkEventCount = 1
 
 var messageCount = atomic.Uint64{}
 var _start time.Time
-
-type SubscriberRepository struct {
-	sync.RWMutex
-	logger      *zap.Logger
-	StreamPools map[string]*StreamPool
-}
 
 type Subscriber struct {
 	logger       *zap.Logger
@@ -39,20 +30,8 @@ type Subscriber struct {
 	Ctx          context.Context
 }
 
-func (r *SubscriberRepository) Unsubscribe(subscriber *Subscriber) error {
-	r.Lock()
-	defer r.Unlock()
-
-	if _, ok := r.StreamPools[subscriber.Id]; !ok {
-		return status.Error(codes.NotFound, "Cannot found subscriber at repository.")
-	}
-
-	delete(r.StreamPools, subscriber.Id)
-	return nil
-}
-
 func NewSubscriber(ctx context.Context, sId string, sName string, topicName string) *Subscriber {
-	channelSize := 100 * 100 // This channel size should be configurable.
+	// This channel size should be configurable.
 	eventChannel := make(chan *proto.Event, channelSize)
 	return &Subscriber{
 		logger:       logger.NewLogger(),
@@ -62,13 +41,6 @@ func NewSubscriber(ctx context.Context, sId string, sName string, topicName stri
 		RetryQueue:   SubscriberRetryHandler.CreateRetryQueue(sId, eventChannel),
 		TopicName:    topicName,
 		Ctx:          ctx,
-	}
-}
-
-func NewSubscriberRepository() *SubscriberRepository {
-	return &SubscriberRepository{
-		logger:      logger.NewLogger(),
-		StreamPools: map[string]*StreamPool{},
 	}
 }
 
@@ -97,21 +69,6 @@ func (s *Subscriber) sendEvent(bulkEvent *proto.BulkEvent, stream proto.Mercuriu
 		s.logger.Error("Error on sending event", zap.String("Error: ", err.Error()), zap.String("SubscriberID", s.Id), zap.String("Subscriber Name", s.Name)) //, zap.Error(err))
 		// sub.RetryQueue <- event
 	}
-}
-
-func (r *SubscriberRepository) addSubscriber(ctx context.Context, id string, subName string, topicName string) (*Subscriber, error) {
-	r.Lock()
-	defer r.Unlock()
-
-	// Handle subName conflict?
-
-	s := NewSubscriber(ctx, id, subName, topicName)
-	if r.StreamPools[subName] == nil {
-		r.StreamPools[subName] = newStreamPool(subName)
-	}
-
-	r.StreamPools[subName].AddSubscriber(s)
-	return s, nil
 }
 
 func checkSentEventCount() {
