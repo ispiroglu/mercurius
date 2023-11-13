@@ -8,6 +8,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/google/uuid"
+
 	logger2 "github.com/ispiroglu/mercurius/internal/logger"
 	"github.com/ispiroglu/mercurius/pkg/client"
 	"go.uber.org/zap"
@@ -23,13 +25,14 @@ var N = 100 * 100
 var start time.Time
 
 func main() {
-	c, err := client.NewClient(CLIENT_NAME, ADDR)
+	id, _ := uuid.NewUUID()
+	c, err := client.NewClient(id, ADDR)
 	if err != nil {
 		logger.Error("Err", zap.Error(err))
 	}
 
 	logger.Info("Published Event")
-
+	var z time.Duration
 	wg := sync.WaitGroup{}
 	wg.Add(N)
 	uintN := uint64(N)
@@ -45,9 +48,7 @@ func main() {
 				}
 				fmt.Println(x)
 				if x == uintN {
-					z := time.Since(start)
-					fmt.Println("Execution time: ", z)
-					panic("")
+					z = time.Since(start)
 				}
 				fmt.Println(strconv.FormatUint(x, 10))
 				//time.Sleep(time.Millisecond)
@@ -57,6 +58,8 @@ func main() {
 	}
 
 	wg.Wait()
+	fmt.Println("Execution time: ", z)
+
 }
 
 // package main

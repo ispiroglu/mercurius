@@ -16,7 +16,9 @@ import (
 )
 
 const totalEventCount = 100 * 100 * 100
-const subscriberBulkEventCount = 100 * 100
+
+// const subscriberBulkEventCount = 100 * 100
+const subscriberBulkEventCount = 1
 
 var messageCount = atomic.Uint64{}
 var _start time.Time
@@ -24,7 +26,7 @@ var _start time.Time
 type SubscriberRepository struct {
 	sync.RWMutex
 	logger      *zap.Logger
-	Subscribers map[string]*Subscriber
+	StreamPools map[string]*StreamPool
 }
 
 type Subscriber struct {
@@ -41,11 +43,11 @@ func (r *SubscriberRepository) Unsubscribe(subscriber *Subscriber) error {
 	r.Lock()
 	defer r.Unlock()
 
-	if _, ok := r.Subscribers[subscriber.Id]; !ok {
+	if _, ok := r.StreamPools[subscriber.Id]; !ok {
 		return status.Error(codes.NotFound, "Cannot found subscriber at repository.")
 	}
 
-	delete(r.Subscribers, subscriber.Id)
+	delete(r.StreamPools, subscriber.Id)
 	return nil
 }
 
@@ -66,11 +68,10 @@ func NewSubscriber(ctx context.Context, sId string, sName string, topicName stri
 func NewSubscriberRepository() *SubscriberRepository {
 	return &SubscriberRepository{
 		logger:      logger.NewLogger(),
-		Subscribers: map[string]*Subscriber{},
+		StreamPools: map[string]*StreamPool{},
 	}
 }
 
-// Should move this to subscriber.
 func (s *Subscriber) HandleBulkEvent(stream proto.Mercurius_SubscribeServer) error {
 	eventBuffer := make([]*proto.Event, 0, subscriberBulkEventCount)
 	for {
@@ -101,12 +102,15 @@ func (s *Subscriber) sendEvent(bulkEvent *proto.BulkEvent, stream proto.Mercuriu
 func (r *SubscriberRepository) addSubscriber(ctx context.Context, id string, subName string, topicName string) (*Subscriber, error) {
 	r.Lock()
 	defer r.Unlock()
-	if r.Subscribers[id] != nil {
-		return nil, status.Error(codes.AlreadyExists, "Already Exists")
-	}
+
+	// Handle subName conflict?
 
 	s := NewSubscriber(ctx, id, subName, topicName)
-	r.Subscribers[id] = s
+	if r.StreamPools[subName] == nil {
+		r.StreamPools[subName] = newStreamPool(subName)
+	}
+
+	r.StreamPools[subName].AddSubscriber(s)
 	return s, nil
 }
 

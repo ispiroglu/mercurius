@@ -12,8 +12,8 @@ import (
 	"go.uber.org/zap"
 )
 
-var y = atomic.Uint64{}
-var start time.Time
+var eventCount = atomic.Uint64{}
+var startTime time.Time
 
 type Server struct {
 	logger     *zap.Logger
@@ -46,18 +46,13 @@ func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_S
 	return err
 }
 
-func (s *Server) Retry(_ context.Context, req *proto.RetryRequest) (*proto.ACK, error) {
-	s.broker.SubscriberRepository.Subscribers[req.SubscriberID].RetryQueue <- req.Event
-	return &proto.ACK{}, nil
-}
-
 func checkPublishEventCount() {
-	if y.Add(1) == 1 {
-		start = time.Now()
+	if eventCount.Add(1) == 1 {
+		startTime = time.Now()
 	}
 
-	if y.Load() == uint64(100*100) {
-		t := time.Since(start)
-		fmt.Println("Enterence time Of Events: ", t)
+	if eventCount.Load() == uint64(100*100) {
+		elapsedTime := time.Since(startTime)
+		fmt.Println("Elapsed time since the start of events:", elapsedTime)
 	}
 }

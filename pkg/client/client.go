@@ -16,15 +16,17 @@ import (
 )
 
 type Client struct {
-	Name string
-	c    proto.MercuriusClient
-	s    *serialize.Serializer
+	id uuid.UUID
+	c  proto.MercuriusClient
+	s  *serialize.Serializer
 }
+
+const streamPerSubscriber int = 50
 
 var l = logger.NewLogger()
 
 // Where to locate defer conn.Close()
-func NewClient(name string, addr string) (*Client, error) {
+func NewClient(id uuid.UUID, addr string) (*Client, error) {
 	conn := getConnection(addr)
 	if conn == nil {
 		l.Error("could not Create a connection")
@@ -35,37 +37,45 @@ func NewClient(name string, addr string) (*Client, error) {
 	l.Info("Created the client")
 
 	return &Client{
-		c:    c,
-		Name: name,
-		s:    serialize.NewSerializer(),
+		id: id,
+		c:  c,
+		s:  serialize.NewSerializer(),
 	}, nil
 }
 
 func (client *Client) Subscribe(topicName string, ctx context.Context, fn func(event *proto.Event) error) error {
 	r := client.createSubRequest(topicName)
 	reqCount := atomic.Uint32{}
-	subStream, err := client.c.Subscribe(ctx, r)
-	if err != nil {
-		return err
-	}
 
-	go func() {
-		for {
-			bulkEvent, err := subStream.Recv()
-			fmt.Println("--------------", reqCount.Add(1))
+	for i := 0; i < streamPerSubscriber; i++ {
+		go func(x int) {
+
+			subStream, err := client.c.Subscribe(ctx, r)
 			if err != nil {
-				// TODO: What if cannot receive?
-				l.Error("", zap.Error(err))
 				panic(err)
 			}
 
 			go func() {
-				for _, v := range bulkEvent.EventList {
-					go fn(v)
+				for {
+					bulkEvent, err := subStream.Recv()
+					fmt.Println("--------------", x, reqCount.Add(1))
+					if err != nil {
+						// TODO: What if cannot receive?
+						l.Error("", zap.Error(err))
+						panic(err)
+
+					}
+
+					go func() {
+						for _, v := range bulkEvent.EventList {
+							go fn(v)
+						}
+					}()
 				}
 			}()
-		}
-	}()
+
+		}(i)
+	}
 
 	return nil
 }
@@ -96,9 +106,11 @@ func (client *Client) retry(ctx context.Context, e *proto.Event, subId string) e
 }
 
 func (client *Client) createSubRequest(topicName string) *proto.SubscribeRequest {
+	subName := fmt.Sprintf("%s", client.id)
+	fmt.Println(subName)
 	return &proto.SubscribeRequest{
 		SubscriberID:   uuid.NewString(),
-		SubscriberName: fmt.Sprintf("%s:%s", client.Name, topicName),
+		SubscriberName: subName,
 		Topic:          topicName,
 		CreatedAt:      timestamppb.Now(),
 	}

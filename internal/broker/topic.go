@@ -8,9 +8,8 @@ import (
 	"time"
 
 	"github.com/ispiroglu/mercurius/internal/logger"
-	"go.uber.org/zap"
-
 	"github.com/ispiroglu/mercurius/proto"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -73,7 +72,7 @@ var publish = atomic.Uint32{}
 var start time.Time
 
 func (t *Topic) PublishEvent(event *proto.Event) {
-	if len(t.SubscriberRepository.Subscribers) == 0 {
+	if len(t.SubscriberRepository.StreamPools) == 0 {
 		t.EventChan <- event
 	} else {
 		publish.Add(1)
@@ -91,10 +90,10 @@ func (t *Topic) PublishEvent(event *proto.Event) {
 		// maybe a worker pool to minimize this?
 		// One subscribers fullness affects other subscribers.
 		// var ts time.Time = time.Now()
-		for _, s := range t.SubscriberRepository.Subscribers {
-			s.EventChannel <- event
+		for _, s := range t.SubscriberRepository.StreamPools {
+			s.Ch <- event
 		}
-		// fmt.Println("Rotate etmem su kadar surdu", time.Since(ts), len(t.SubscriberRepository.Subscribers))
+		// fmt.Println("Rotate etmem su kadar surdu", time.Since(ts), len(t.SubscriberRepository.StreamPools))
 	}
 }
 
@@ -107,14 +106,15 @@ func (t *Topic) AddSubscriber(ctx context.Context, id string, name string) (*Sub
 		return nil, status.Error(codes.AlreadyExists, errorMessage)
 	}
 
+	// FIRSTY SUBSCRIBED
 	//t.logger.Info("Added subscriber", zap.String("Topic", t.Name), zap.String("sId", id), zap.String("sName", name))
-	if len(t.SubscriberRepository.Subscribers) == 1 {
-		if len(t.EventChan) != 0 {
-			for event := range t.EventChan {
-				s.EventChannel <- event
-			}
-		}
-	}
+	// if len(t.SubscriberRepository.StreamPools) == 1 {
+	// 	if len(t.EventChan) != 0 {
+	// 		for event := range t.EventChan {
+	// 			s.EventChannel <- event
+	// 		}
+	// 	}
+	// }
 
 	return s, nil
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/google/uuid"
 	"sync/atomic"
 	"time"
 
@@ -28,7 +29,8 @@ func main() {
 
 	for i := 0; i < subCount; i++ {
 		go func() {
-			c, err := client.NewClient(CLIENT_NAME, ADDR)
+			id, _ := uuid.NewUUID()
+			c, err := client.NewClient(id, ADDR)
 			if err != nil {
 				logger.Error("Err", zap.Error(err))
 			}
