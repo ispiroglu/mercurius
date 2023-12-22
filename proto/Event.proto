@@ -16,6 +16,10 @@ message Event {
   uint32 expiresAt = 5;
 }
 
+message BulkEvent{
+  repeated Event eventList = 1;
+}
+
 message SubscribeRequest {
   string subscriberID = 1;
   string subscriberName = 2;
@@ -33,6 +37,6 @@ message ACK {}
 
 service Mercurius {
   rpc Publish (Event) returns (ACK) {};
-  rpc Subscribe (SubscribeRequest) returns (stream Event);
+  rpc Subscribe (SubscribeRequest) returns (stream BulkEvent);
   rpc Retry (RetryRequest) returns (ACK);
 }

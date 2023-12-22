@@ -12,7 +12,8 @@ import (
 	"go.uber.org/zap"
 )
 
-const xz = 100 * 100 * 100
+var eventCount = atomic.Uint64{}
+var startTime time.Time
 
 type Server struct {
 	logger     *zap.Logger
@@ -28,12 +29,8 @@ func NewMercuriusServer() *Server {
 	}
 }
 
-var y = atomic.Uint64{}
-
 func (s *Server) Publish(_ context.Context, event *proto.Event) (*proto.ACK, error) {
-	if y.Add(1) == 1 {
-		start = time.Now()
-	}
+	checkPublishEventCount()
 	return s.broker.Publish(event)
 }
 
@@ -45,85 +42,17 @@ func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_S
 		return err
 	}
 
-	for w := 0; w < 1; w++ {
-		go consumerTask(stream, sub, s.logger)
+	err = sub.HandleBulkEvent(stream)
+	return err
+}
+
+func checkPublishEventCount() {
+	if eventCount.Add(1) == 1 {
+		startTime = time.Now()
 	}
 
-	cc := make(chan struct{})
-	<-cc
-
-	/* for {
-
-		select {
-		case <-sub.Ctx.Done():
-
-			broker.SubscriberRetryHandler.RemoveRetryQueue(sub.Id)
-			go func(sub *broker.Subscriber) {
-				// s.broker.Unsubscribe(sub)
-				runtime.GC()
-			}(sub)
-
-			return nil
-		case event := <-sub.EventChannel:
-
-			// time.Sleep(4 * time.Second)
-			go func() {
-				// Send isleminde kalan var
-				if err := stream.Send(event); err != nil {
-					panic("")
-					s.logger.Error("Error on sending event", zap.String("TopicName", event.Topic), zap.String("SubscriberID", sub.Id), zap.String("Subscriber Name", sub.Name)) //, zap.Error(err))
-					s.logger.Info("Sending event to retry queue")
-					sub.RetryQueue <- event
-				}
-
-				x := messageCount.Add(1)
-
-				if x == 100*100*100 {
-					z := time.Since(start)
-					fmt.Println("Execution time: ", z)
-				}
-			}()
-		}
-	} */
-
-	return nil
-}
-
-func (s *Server) Retry(_ context.Context, req *proto.RetryRequest) (*proto.ACK, error) {
-	s.logger.Info("Received retry request")
-	s.broker.SubscriberRepository.Subscribers[req.SubscriberID].RetryQueue <- req.Event
-	return &proto.ACK{}, nil
-}
-
-var messageCount = atomic.Uint64{}
-var start time.Time
-
-func consumerTask(stream proto.Mercurius_SubscribeServer, sub *broker.Subscriber, logger *zap.Logger) {
-	for {
-
-		select {
-		case <-sub.Ctx.Done():
-
-			broker.SubscriberRetryHandler.RemoveRetryQueue(sub.Id)
-			go func(sub *broker.Subscriber) {
-				// s.broker.Unsubscribe(sub)
-			}(sub)
-
-			return
-		case event := <-sub.EventChannel:
-			go func() {
-				if err := stream.Send(event); err != nil {
-					logger.Error("Error on sending event", zap.String("TopicName", event.Topic), zap.String("SubscriberID", sub.Id), zap.String("Subscriber Name", sub.Name)) //, zap.Error(err))
-					logger.Info("Sending event to retry queue")
-					sub.RetryQueue <- event
-				}
-				x := messageCount.Add(1)
-
-				if x == xz {
-					z := time.Since(start)
-					fmt.Println("Execution time: ", z)
-				}
-			}()
-		}
+	if eventCount.Load() == uint64(100*100) {
+		elapsedTime := time.Since(startTime)
+		fmt.Println("Elapsed time since the start of events:", elapsedTime)
 	}
 }

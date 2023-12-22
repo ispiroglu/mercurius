@@ -6,6 +6,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/google/uuid"
+
 	k "github.com/ispiroglu/mercurius/internal/logger"
 	"github.com/ispiroglu/mercurius/pkg/client"
 	"github.com/ispiroglu/mercurius/proto"
@@ -15,7 +17,8 @@ import (
 const ADDR = "0.0.0.0:9000"
 const TopicName = "one-to-one"
 const CLIENT_NAME = "Sample Client"
-const N = 100 * 100 * 100
+const subCount = 100
+const N = 100 * 100 * subCount
 
 var messageCount = atomic.Uint64{}
 var start = time.Time{}
@@ -24,12 +27,14 @@ var ctx, _ = context.WithCancel(context.Background())
 var ch = make(chan struct{})
 
 func main() {
-	c, err := client.NewClient(CLIENT_NAME, ADDR)
-	if err != nil {
-		logger.Error("Err", zap.Error(err))
-	}
-	for i := 0; i < 100; i++ {
+
+	for i := 0; i < subCount; i++ {
 		go func() {
+			id, _ := uuid.NewUUID()
+			c, err := client.NewClient(id, ADDR)
+			if err != nil {
+				logger.Error("Err", zap.Error(err))
+			}
 			if err := c.Subscribe(TopicName, ctx, handler); err != nil {
 				logger.Error("Err", zap.Error(err))
 			}
@@ -45,7 +50,7 @@ func handler(e *proto.Event) error {
 	if x == 1 {
 		start = time.Now()
 	}
-	fmt.Println(x)
+	// fmt.Println(string(e.Body))
 	if x == N {
 		z := time.Since(start)
 		fmt.Println("Execution time: ", z)
