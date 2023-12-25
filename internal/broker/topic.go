@@ -30,20 +30,17 @@ func (t *Topic) PublishEvent(event *proto.Event) {
 	if t.SubscriberRepository.poolCount.Load() == 0 {
 		t.EventChan <- event
 	} else {
-		publish.Add(1)
 
 		if publish.Load() == uint32(1) {
 			start = time.Now()
 		}
 
-		if publish.Load() == publishCount {
+		c := publish.Add(1)
+		if c == uint32(1) {
+			start = time.Now()
+		} else if c == publishCount {
 			fmt.Println("Total Routing Time: ", time.Since(start))
 		}
-
-		t.SubscriberRepository.StreamPools.Range(func(k any, v interface{}) bool {
-			v.(*StreamPool).Ch <- event
-			return true
-		})
 	}
 }
 

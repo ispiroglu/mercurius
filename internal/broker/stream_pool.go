@@ -1,8 +1,12 @@
 package broker
 
 import (
-	"github.com/ispiroglu/mercurius/proto"
+	"bytes"
+	"runtime"
+	"strconv"
 	"sync"
+
+	"github.com/ispiroglu/mercurius/proto"
 )
 
 type StreamPool struct {
@@ -16,7 +20,7 @@ func newStreamPool(name string) *StreamPool {
 
 	return &StreamPool{
 		SubscriberName: name,
-		Streams:        make([]*Subscriber, 0),
+		Streams:        []*Subscriber{},
 		Ch:             make(chan *proto.Event),
 		Mutex:          sync.Mutex{},
 	}
@@ -27,11 +31,22 @@ func (p *StreamPool) AddSubscriber(s *Subscriber) {
 	defer p.Unlock()
 
 	p.Streams = append(p.Streams, s)
-	go s.worker(p.Ch)
+	id := len(p.Streams)
+
+	go s.worker(id, p.Ch)
 }
 
-func (s *Subscriber) worker(ch chan *proto.Event) {
+func (s *Subscriber) worker(id int, ch chan *proto.Event) {
 	for e := range ch {
 		s.EventChannel <- e
 	}
+}
+
+func getGoroutineID() string {
+	b := make([]byte, 64)
+	b = b[:runtime.Stack(b, false)]
+	b = bytes.TrimPrefix(b, []byte("goroutine "))
+	b = b[:bytes.IndexByte(b, ' ')]
+	n, _ := strconv.Atoi(string(b))
+	return strconv.Itoa(n)
 }

@@ -17,7 +17,7 @@ import (
 const ADDR = "0.0.0.0:9000"
 const TopicName = "one-to-one"
 const CLIENT_NAME = "Sample Client"
-const subCount = 100
+const subCount = 1
 const N = 100 * 100 * subCount
 
 var messageCount = atomic.Uint64{}
@@ -54,7 +54,7 @@ func handler(e *proto.Event) error {
 	if x == N {
 		z := time.Since(start)
 		fmt.Println("Execution time: ", z)
-		ch <- struct{}{}
+		// ch <- struct{}{}
 	}
 	return nil
 }

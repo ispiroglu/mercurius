@@ -35,23 +35,31 @@ func (s *Server) Publish(_ context.Context, event *proto.Event) (*proto.ACK, err
 }
 
 func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_SubscribeServer) error {
-	ctx := stream.Context()
-	sub, err := s.broker.Subscribe(ctx, req.Topic, req.SubscriberID, req.SubscriberName)
-	if err != nil {
-		s.logger.Error("Error on subscribe", zap.String("Topic", req.Topic), zap.String("SubscriberID", req.SubscriberID), zap.String("Subscriber Name", req.SubscriberName)) //, zap.Error(err))
-		return err
-	}
+	/*
+		ctx := stream.Context()
+		sub, err := s.broker.Subscribe(ctx, req.Topic, req.SubscriberID, req.SubscriberName)
+		if err != nil {
+			s.logger.Error("Error on subscribe", zap.String("Topic", req.Topic), zap.String("SubscriberID", req.SubscriberID), zap.String("Subscriber Name", req.SubscriberName)) //, zap.Error(err))
+			return err
+		}
 
-	err = sub.HandleBulkEvent(stream)
-	return err
+		err = sub.HandleBulkEvent(stream)
+		s.broker.Unsubscribe(sub)*/
+	time.Sleep(time.Second * 100)
+	return nil
+}
+
+func (s *Server) Retry(_ context.Context, req *proto.RetryRequest) (*proto.ACK, error) {
+	time.Sleep(time.Millisecond * 100)
+	return &proto.ACK{}, nil
 }
 
 func checkPublishEventCount() {
-	if eventCount.Add(1) == 1 {
-		startTime = time.Now()
-	}
+	c := eventCount.Add(1)
 
-	if eventCount.Load() == uint64(100*100) {
+	if c == 1 {
+		startTime = time.Now()
+	} else if c == uint64(100*100) {
 		elapsedTime := time.Since(startTime)
 		fmt.Println("Elapsed time since the start of events:", elapsedTime)
 	}

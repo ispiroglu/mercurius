@@ -15,7 +15,7 @@ const totalEventCount = 100 * 100 * 100
 const channelSize = 1
 
 // const subscriberBulkEventCount = 100 * 100
-const subscriberBulkEventCount = 1
+// const subscriberBulkEventCount = 1
 
 var messageCount = atomic.Uint64{}
 var _start time.Time
@@ -45,21 +45,16 @@ func NewSubscriber(ctx context.Context, sId string, sName string, topicName stri
 }
 
 func (s *Subscriber) HandleBulkEvent(stream proto.Mercurius_SubscribeServer) error {
-	eventBuffer := make([]*proto.Event, 0, subscriberBulkEventCount)
 	for {
 		select {
 		case <-s.Ctx.Done():
 			return nil
 		case event := <-s.EventChannel:
 			checkSentEventCount()
-			eventBuffer = append(eventBuffer, event)
-			if len(eventBuffer) == subscriberBulkEventCount {
-				bulkEvent := &proto.BulkEvent{
-					EventList: eventBuffer,
-				}
-				s.sendEvent(bulkEvent, stream)
-				eventBuffer = eventBuffer[:0]
+			bulkEvent := &proto.BulkEvent{
+				EventList: []*proto.Event{event},
 			}
+			s.sendEvent(bulkEvent, stream)
 		}
 	}
 }
@@ -71,12 +66,16 @@ func (s *Subscriber) sendEvent(bulkEvent *proto.BulkEvent, stream proto.Mercuriu
 	}
 }
 
+func (s *Subscriber) Close() {
+	close(s.EventChannel)
+	close(s.RetryQueue)
+}
+
 func checkSentEventCount() {
 	x := messageCount.Add(1)
 	if x == 1 {
 		_start = time.Now()
-	}
-	if x == totalEventCount {
+	} else if x == totalEventCount {
 		z := time.Since(_start)
 		fmt.Println("Total stream send time: ", z)
 	}

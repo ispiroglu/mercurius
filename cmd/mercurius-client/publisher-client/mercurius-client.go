@@ -38,7 +38,7 @@ func main() {
 	uintN := uint64(N)
 	for i := 0; i < N; i++ {
 		go func(w *sync.WaitGroup) {
-			for j := 0; j < 1; j++ {
+			for j := 0; j < 1000; j++ {
 				x := messageCount.Add(1)
 				if err := c.Publish(TopicName, []byte(strconv.FormatUint(x, 10)), context.Background()); err != nil {
 					logger.Error("Err", zap.Error(err))
@@ -51,7 +51,7 @@ func main() {
 					z = time.Since(start)
 				}
 				fmt.Println(strconv.FormatUint(x, 10))
-				//time.Sleep(time.Millisecond)
+				time.Sleep(300 * time.Millisecond)
 			}
 			w.Done()
 		}(&wg)
