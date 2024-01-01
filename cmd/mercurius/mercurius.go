@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net"
-
 	"net/http"
 	_ "net/http/pprof"
 
@@ -34,10 +33,10 @@ func main() {
 
 	proto.RegisterMercuriusServer(grpcServer, server)
 
-	//go func() {
-	//	http.Handle("/metrics", promhttp.Handler())
-	//	_ = http.ListenAndServe(":8081", nil)
-	// }()
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		_ = http.ListenAndServe(":8081", nil)
+	}()
 	if err := grpcServer.Serve(list); err != nil {
 		log.Fatal("Failed to serve", zap.Error(err))
 	}

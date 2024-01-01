@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
+	client_example "github.com/ispiroglu/mercurius/cmd/mercurius-client"
 	logger2 "github.com/ispiroglu/mercurius/internal/logger"
 	"github.com/ispiroglu/mercurius/pkg/client"
 	"go.uber.org/zap"
@@ -21,7 +22,7 @@ const CLIENT_NAME = "Sample Client"
 
 var logger = logger2.NewLogger()
 var messageCount = atomic.Uint64{}
-var N = 100 * 100
+
 var start time.Time
 
 func main() {
@@ -34,24 +35,26 @@ func main() {
 	logger.Info("Published Event")
 	var z time.Duration
 	wg := sync.WaitGroup{}
-	wg.Add(N)
-	uintN := uint64(N)
-	for i := 0; i < N; i++ {
+	wg.Add(client_example.PublisherCount)
+	client_example.StartTime = time.Now()
+	fmt.Println(client_example.StartTime)
+	for i := 0; i < client_example.PublisherCount; i++ {
 		go func(w *sync.WaitGroup) {
-			for j := 0; j < 1000; j++ {
+			for j := 0; j < client_example.PublishCount; j++ {
 				x := messageCount.Add(1)
-				if err := c.Publish(TopicName, []byte(strconv.FormatUint(x, 10)), context.Background()); err != nil {
-					logger.Error("Err", zap.Error(err))
-				}
 				if x == 1 {
 					start = time.Now()
 				}
+				if err := c.Publish(TopicName, []byte(strconv.FormatUint(x, 10)), context.Background()); err != nil {
+					logger.Error("Err", zap.Error(err))
+				}
+
 				fmt.Println(x)
-				if x == uintN {
+				if x == client_example.TotalPublishCount {
 					z = time.Since(start)
 				}
-				fmt.Println(strconv.FormatUint(x, 10))
-				time.Sleep(300 * time.Millisecond)
+				// fmt.Println(strconv.FormatUint(x, 10))
+				time.Sleep(time.Millisecond)
 			}
 			w.Done()
 		}(&wg)

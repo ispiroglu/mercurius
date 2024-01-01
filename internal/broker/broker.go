@@ -16,11 +16,6 @@ type Broker struct {
 	SubscriberRepository *SubscriberRepository
 }
 
-type IBroker interface {
-	Publish(event *pb.Event) (*pb.ACK, error)
-	Subscribe(ctx context.Context, topic string, sId string, sName string) (<-chan *pb.Event, error)
-}
-
 func NewBroker() *Broker {
 	return &Broker{
 		logger:               logger.NewLogger(),
@@ -42,13 +37,14 @@ func (b *Broker) Publish(event *pb.Event) (*pb.ACK, error) {
 func (b *Broker) Unsubscribe(sub *Subscriber) {
 	b.TopicRepository.Unsubscribe(sub)
 	if err := b.SubscriberRepository.Unsubscribe(sub); err != nil {
-		b.logger.Warn("Failed to unsubscribe subscriber", zap.String("SubscriberID", sub.Id), zap.String("Subscriber Name", sub.Name), zap.Error(err))
+		// b.logger.Warn("Failed to unsubscribe subscriber", zap.String("SubscriberID", sub.Id), zap.String("Subscriber Name", sub.Name), zap.Error(err))
 	}
 }
 
 func (b *Broker) Subscribe(ctx context.Context, topicName string, sId string, sName string) (*Subscriber, error) {
 	t, err := b.findOrInsertTopic(topicName)
 	if err != nil {
+		b.logger.Error("Broker could not find or insert topic", zap.String("Topic", topicName), zap.Error(err))
 		return nil, err
 	}
 

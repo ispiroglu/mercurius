@@ -1,10 +1,11 @@
 package broker
 
 import (
+	"sync"
+
 	"github.com/ispiroglu/mercurius/internal/logger"
 	"github.com/ispiroglu/mercurius/proto"
 	"go.uber.org/zap"
-	"sync"
 )
 
 /*
@@ -14,7 +15,7 @@ import (
 
 // What should these values be?
 // This values should be configurable from yml.
-const retryBufferSize = 5000000
+const retryBufferSize = 1
 
 // const retryCount = 5
 // const retryTime = 100

@@ -50,6 +50,6 @@ func (r *TopicRepository) Unsubscribe(subscriber *Subscriber) {
 	}
 
 	if err := topic.SubscriberRepository.Unsubscribe(subscriber); err != nil {
-		r.logger.Warn("", zap.Error(err))
+		// r.logger.Warn("", zap.Error(err))
 	}
 }

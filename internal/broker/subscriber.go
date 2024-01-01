@@ -6,16 +6,17 @@ import (
 	"sync/atomic"
 	"time"
 
+	client_example "github.com/ispiroglu/mercurius/cmd/mercurius-client"
 	"github.com/ispiroglu/mercurius/internal/logger"
 	"github.com/ispiroglu/mercurius/proto"
 	"go.uber.org/zap"
 )
 
-const totalEventCount = 100 * 100 * 100
+const totalEventCount = 100 * 100 * 100 * 100
 const channelSize = 1
 
 // const subscriberBulkEventCount = 100 * 100
-// const subscriberBulkEventCount = 1
+const subscriberBulkEventCount = 1
 
 var messageCount = atomic.Uint64{}
 var _start time.Time
@@ -44,38 +45,39 @@ func NewSubscriber(ctx context.Context, sId string, sName string, topicName stri
 	}
 }
 
-func (s *Subscriber) HandleBulkEvent(stream proto.Mercurius_SubscribeServer) error {
+func (s *Subscriber) HandleBulkEvent(stream *proto.Mercurius_SubscribeServer) error {
+	eventBuffer := make([]*proto.Event, 0, subscriberBulkEventCount)
 	for {
 		select {
 		case <-s.Ctx.Done():
 			return nil
 		case event := <-s.EventChannel:
 			checkSentEventCount()
-			bulkEvent := &proto.BulkEvent{
-				EventList: []*proto.Event{event},
+			eventBuffer = append(eventBuffer, event)
+			if len(eventBuffer) == subscriberBulkEventCount {
+				bulkEvent := &proto.BulkEvent{
+					EventList: eventBuffer,
+				}
+				s.sendEvent(bulkEvent, stream)
+				eventBuffer = eventBuffer[:0]
 			}
-			s.sendEvent(bulkEvent, stream)
 		}
 	}
 }
 
-func (s *Subscriber) sendEvent(bulkEvent *proto.BulkEvent, stream proto.Mercurius_SubscribeServer) {
-	if err := stream.Send(bulkEvent); err != nil {
-		s.logger.Error("Error on sending event", zap.String("Error: ", err.Error()), zap.String("SubscriberID", s.Id), zap.String("Subscriber Name", s.Name)) //, zap.Error(err))
+func (s *Subscriber) sendEvent(bulkEvent *proto.BulkEvent, stream *proto.Mercurius_SubscribeServer) {
+	if err := (*stream).Send(bulkEvent); err != nil {
+		// s.logger.Error("Error on sending event", zap.String("Error: ", err.Error()), zap.String("SubscriberID", s.Id), zap.String("Subscriber Name", s.Name)) //, zap.Error(err))
 		// sub.RetryQueue <- event
 	}
 }
 
-func (s *Subscriber) Close() {
-	close(s.EventChannel)
-	close(s.RetryQueue)
-}
-
 func checkSentEventCount() {
-	x := messageCount.Add(1)
-	if x == 1 {
+	eventCount := messageCount.Add(1)
+	if eventCount == 1 {
 		_start = time.Now()
-	} else if x == totalEventCount {
+	}
+	if eventCount == client_example.TotalReceiveCount {
 		z := time.Since(_start)
 		fmt.Println("Total stream send time: ", z)
 	}

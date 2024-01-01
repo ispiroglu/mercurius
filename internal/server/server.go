@@ -6,6 +6,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	client_example "github.com/ispiroglu/mercurius/cmd/mercurius-client"
 	"github.com/ispiroglu/mercurius/internal/broker"
 	"github.com/ispiroglu/mercurius/internal/logger"
 	"github.com/ispiroglu/mercurius/proto"
@@ -35,31 +36,28 @@ func (s *Server) Publish(_ context.Context, event *proto.Event) (*proto.ACK, err
 }
 
 func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_SubscribeServer) error {
-	/*
-		ctx := stream.Context()
-		sub, err := s.broker.Subscribe(ctx, req.Topic, req.SubscriberID, req.SubscriberName)
-		if err != nil {
-			s.logger.Error("Error on subscribe", zap.String("Topic", req.Topic), zap.String("SubscriberID", req.SubscriberID), zap.String("Subscriber Name", req.SubscriberName)) //, zap.Error(err))
-			return err
-		}
+	ctx := stream.Context()
+	sub, err := s.broker.Subscribe(ctx, req.Topic, req.SubscriberID, req.SubscriberName)
+	if err != nil {
+		s.logger.Error("Error on subscribe", zap.String("Topic", req.Topic), zap.String("SubscriberID", req.SubscriberID), zap.String("Subscriber Name", req.SubscriberName)) //, zap.Error(err))
+		return err
+	}
 
-		err = sub.HandleBulkEvent(stream)
-		s.broker.Unsubscribe(sub)*/
-	time.Sleep(time.Second * 100)
-	return nil
-}
+	err = sub.HandleBulkEvent(&stream)
+	if err != nil {
+		s.logger.Error("", zap.Error(err))
+	}
 
-func (s *Server) Retry(_ context.Context, req *proto.RetryRequest) (*proto.ACK, error) {
-	time.Sleep(time.Millisecond * 100)
-	return &proto.ACK{}, nil
+	s.broker.Unsubscribe(sub)
+	return err
 }
 
 func checkPublishEventCount() {
-	c := eventCount.Add(1)
-
-	if c == 1 {
+	if eventCount.Add(1) == 1 {
 		startTime = time.Now()
-	} else if c == uint64(100*100) {
+	}
+
+	if eventCount.Load() == client_example.TotalPublishCount {
 		elapsedTime := time.Since(startTime)
 		fmt.Println("Elapsed time since the start of events:", elapsedTime)
 	}

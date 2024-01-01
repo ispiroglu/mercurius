@@ -2,13 +2,12 @@ package broker
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"sync/atomic"
 
 	"github.com/ispiroglu/mercurius/internal/logger"
 	"go.uber.org/zap"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type SubscriberRepository struct {
@@ -25,12 +24,13 @@ func NewSubscriberRepository() *SubscriberRepository {
 }
 
 func (r *SubscriberRepository) Unsubscribe(subscriber *Subscriber) error {
-
-	if _, ok := r.StreamPools.Load(subscriber.Id); !ok {
-		return status.Error(codes.NotFound, "Cannot found subscriber at repository.")
+	val, ok := r.StreamPools.LoadAndDelete(subscriber.Name)
+	if !ok {
+		return fmt.Errorf("subscriber not found")
 	}
 
-	r.StreamPools.Delete(subscriber.Id)
+	val.(*StreamPool).Delete()
+
 	r.poolCount.Store(
 		r.poolCount.Load() - 1,
 	)

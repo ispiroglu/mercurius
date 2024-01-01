@@ -11,6 +11,8 @@ require (
 	google.golang.org/protobuf v1.30.0
 )
 
+require github.com/alitto/pond v1.8.3 // indirect
+
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -18,6 +20,8 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
+	github.com/panjf2000/ants v1.3.0
+	github.com/panjf2000/ants/v2 v2.9.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.42.0 // indirect

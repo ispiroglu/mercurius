@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync/atomic"
 
 	"github.com/google/uuid"
+	client_example "github.com/ispiroglu/mercurius/cmd/mercurius-client"
 	"github.com/ispiroglu/mercurius/internal/logger"
 	"github.com/ispiroglu/mercurius/pkg/serialize"
 	"github.com/ispiroglu/mercurius/proto"
@@ -20,8 +20,6 @@ type Client struct {
 	c  proto.MercuriusClient
 	s  *serialize.Serializer
 }
-
-const streamPerSubscriber int = 1
 
 var l = logger.NewLogger()
 
@@ -44,21 +42,20 @@ func NewClient(id uuid.UUID, addr string) (*Client, error) {
 }
 
 func (client *Client) Subscribe(topicName string, ctx context.Context, fn func(event *proto.Event) error) error {
-	r := client.createSubRequest(topicName)
-	reqCount := atomic.Uint32{}
 
-	for i := 0; i < streamPerSubscriber; i++ {
+	for i := 0; i < client_example.StreamPerSubscriber; i++ {
 		go func(x int) {
-
+			r := client.createSubRequest(topicName, x)
 			subStream, err := client.c.Subscribe(ctx, r)
 			if err != nil {
 				panic(err)
 			}
 
-			go func() {
+			go func(stream *proto.Mercurius_SubscribeClient) {
 				for {
-					bulkEvent, err := subStream.Recv()
-					fmt.Println("--------------", x, reqCount.Add(1))
+					bulkEvent, err := (*stream).Recv()
+					// fmt.Printf("x: %v\n", x)
+
 					if err != nil {
 						// TODO: What if cannot receive?
 						l.Error("", zap.Error(err))
@@ -72,7 +69,7 @@ func (client *Client) Subscribe(topicName string, ctx context.Context, fn func(e
 						}
 					}()
 				}
-			}()
+			}(&subStream)
 
 		}(i)
 	}
@@ -105,11 +102,11 @@ func (client *Client) retry(ctx context.Context, e *proto.Event, subId string) e
 	return nil
 }
 
-func (client *Client) createSubRequest(topicName string) *proto.SubscribeRequest {
+func (client *Client) createSubRequest(topicName string, x int) *proto.SubscribeRequest {
 	subName := fmt.Sprintf("%s", client.id)
 	fmt.Println(subName)
 	return &proto.SubscribeRequest{
-		SubscriberID:   uuid.NewString(),
+		SubscriberID:   fmt.Sprintf("%d", x),
 		SubscriberName: subName,
 		Topic:          topicName,
 		CreatedAt:      timestamppb.Now(),

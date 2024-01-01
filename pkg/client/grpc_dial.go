@@ -1,10 +1,9 @@
 package client
 
 import (
-	"sync"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"sync"
 )
 
 var (
@@ -13,7 +12,7 @@ var (
 )
 
 func getConnection(addr string) *grpc.ClientConn {
-	/* o.Do(func() {
+	/*.Do(func() {
 		c, err := grpc.Dial(addr,
 			grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
@@ -23,7 +22,11 @@ func getConnection(addr string) *grpc.ClientConn {
 		}
 	})*/
 
-	c, _ := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	c, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithBlock())
+	if err != nil {
+		panic(err)
+	}
 	// c, _ := grpc.Dial(addr,
 	// 	grpc.WithTransportCredentials(insecure.NewCredentials()),
 	// 	grpc.WithInitialWindowSize(1024*1024),
