@@ -21,6 +21,8 @@ type Client struct {
 	s  *serialize.Serializer
 }
 
+type EventHandler func(event *proto.Event) error
+
 var l = logger.NewLogger()
 
 // Where to locate defer conn.Close()
@@ -65,6 +67,7 @@ func (client *Client) Subscribe(topicName string, ctx context.Context, fn func(e
 
 					go func() {
 						for _, v := range bulkEvent.EventList {
+							fmt.Println("Received from stream: ", string(v.Body))
 							go fn(v)
 						}
 					}()

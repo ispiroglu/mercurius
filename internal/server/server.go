@@ -52,6 +52,19 @@ func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_S
 	return err
 }
 
+func (s *Server) Retry(ctx context.Context, in *proto.RetryRequest) (*proto.ACK, error) {
+	// TODO: should retry request include subscriber name
+	streamPool, ok := s.broker.SubscriberRepository.StreamPools.Load(in.SubscriberID)
+	if !ok {
+		return nil, nil
+	}
+	streamPool.(*broker.StreamPool).Ch <- in.Event
+
+	return &proto.ACK{}, nil
+}
+
+// TODO: Retry
+
 func checkPublishEventCount() {
 	if eventCount.Add(1) == 1 {
 		startTime = time.Now()

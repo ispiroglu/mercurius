@@ -17,9 +17,6 @@ import (
 
 const ADDR = "0.0.0.0:9000"
 const TopicName = "one-to-one"
-const CLIENT_NAME = "Sample Client"
-const subCount = 100
-const N = 100 * 100 * subCount
 
 var messageCount = atomic.Uint64{}
 var start = time.Time{}

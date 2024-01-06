@@ -43,11 +43,9 @@ func (t *Topic) PublishEvent(event *proto.Event) {
 			// 	fmt.Println("Total Routing Time: ", time.Since(start))
 		}
 
-		t.workerPool.Submit(func() {
-			t.SubscriberRepository.StreamPools.Range(func(k any, v interface{}) bool {
-				v.(*StreamPool).Ch <- event
-				return true
-			})
+		t.SubscriberRepository.StreamPools.Range(func(k any, v interface{}) bool {
+			v.(*StreamPool).Ch <- event
+			return true
 		})
 	}
 }

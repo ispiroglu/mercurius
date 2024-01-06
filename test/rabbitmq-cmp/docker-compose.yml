@@ -1,0 +1,34 @@
+version: '3'
+services:
+  rabbitmq:
+    image: rabbitmq:3.8.17-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=password
+    volumes:
+      - ./rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - my-network
+
+  exchange_queue_setup:
+    image: rabbitmq:3.8.17-management
+    command: >
+      bash -c "
+      rabbitmq-plugins enable rabbitmq_management;
+      rabbitmqadmin declare exchange name=my-exchange type=direct;
+      rabbitmqadmin declare queue name=my-queue;
+      rabbitmqadmin declare binding source=my-exchange destination=my-queue routing_key=my-routing-key;
+      rabbitmqadmin declare user name=my-user password=my-password tags=administrator;
+      rabbitmqadmin declare permission vhost=/ user=my-user configure=.* write=.* read=.*;
+      sleep infinity
+      "
+    depends_on:
+      - rabbitmq
+    networks:
+      - my-network
+
+networks:
+  my-network:
