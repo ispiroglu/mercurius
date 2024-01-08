@@ -33,6 +33,7 @@ func NewMercuriusServer() *Server {
 func (s *Server) Publish(_ context.Context, event *proto.Event) (*proto.ACK, error) {
 	checkPublishEventCount()
 	return s.broker.Publish(event)
+	// return &proto.ACK{}, nil
 }
 
 func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_SubscribeServer) error {
@@ -54,11 +55,11 @@ func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_S
 
 func (s *Server) Retry(ctx context.Context, in *proto.RetryRequest) (*proto.ACK, error) {
 	// TODO: should retry request include subscriber name
-	streamPool, ok := s.broker.SubscriberRepository.StreamPools.Load(in.SubscriberID)
-	if !ok {
+	// _, ok := s.broker.SubscriberRepository.StreamPools.Load(in.SubscriberID)
+	if !true {
 		return nil, nil
 	}
-	streamPool.(*broker.StreamPool).Ch <- in.Event
+	// streamPool.(*broker.StreamPool).Ch <- in.Event
 
 	return &proto.ACK{}, nil
 }

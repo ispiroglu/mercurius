@@ -11,13 +11,13 @@ import (
 
 type TopicRepository struct {
 	logger *zap.Logger
-	Topics sync.Map
+	Topics *sync.Map
 }
 
 func NewTopicRepository() *TopicRepository {
 	return &TopicRepository{
 		logger: logger.NewLogger(),
-		Topics: sync.Map{},
+		Topics: &sync.Map{},
 	}
 }
 

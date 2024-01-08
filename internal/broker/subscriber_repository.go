@@ -12,14 +12,14 @@ import (
 
 type SubscriberRepository struct {
 	logger      *zap.Logger
-	StreamPools sync.Map
+	StreamPools *sync.Map
 	poolCount   atomic.Uint32
 }
 
 func NewSubscriberRepository() *SubscriberRepository {
 	return &SubscriberRepository{
 		logger:      logger.NewLogger(),
-		StreamPools: sync.Map{},
+		StreamPools: &sync.Map{},
 	}
 }
 
@@ -37,13 +37,40 @@ func (r *SubscriberRepository) Unsubscribe(subscriber *Subscriber) error {
 	return nil
 }
 
+/*
+func (r *SubscriberRepository) PublishEvent(event *proto.Event) {
+	if r.poolCount.Load() == 0 {
+		panic("No subscriber found")
+	} else {
+
+		r.StreamPools
+
+		r.StreamPools.Range(func(k any, v interface{}) bool {
+			c := *v.(*StreamPool).Ch
+			select {
+			case c <- event.Event:
+			default:
+				panic("ASDA")
+			}
+			return true
+		})
+	}
+}*/
+
 func (r *SubscriberRepository) addSubscriber(ctx context.Context, id string, subName string, topicName string) (*Subscriber, error) {
 
 	// Handle subName conflict?
 	s := NewSubscriber(ctx, id, subName, topicName)
-	pool, _ := r.StreamPools.LoadOrStore(subName, newStreamPool(subName))
+	var pool *StreamPool
 
-	pool.(*StreamPool).AddSubscriber(s)
+	if p, ok := r.StreamPools.Load(subName); ok {
+		pool = p.(*StreamPool)
+	} else {
+		pool = newStreamPool(subName)
+		r.StreamPools.Store(subName, pool)
+	}
+
+	pool.AddSubscriber(s)
 	r.poolCount.Add(1)
 	return s, nil
 }

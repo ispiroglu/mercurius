@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync/atomic"
+	"time"
 
 	"github.com/google/uuid"
 	client_example "github.com/ispiroglu/mercurius/cmd/mercurius-client"
@@ -43,6 +45,9 @@ func NewClient(id uuid.UUID, addr string) (*Client, error) {
 	}, nil
 }
 
+var messageCount = atomic.Uint64{}
+var start time.Time
+
 func (client *Client) Subscribe(topicName string, ctx context.Context, fn func(event *proto.Event) error) error {
 
 	for i := 0; i < client_example.StreamPerSubscriber; i++ {
@@ -55,8 +60,19 @@ func (client *Client) Subscribe(topicName string, ctx context.Context, fn func(e
 
 			go func(stream *proto.Mercurius_SubscribeClient) {
 				for {
+
 					bulkEvent, err := (*stream).Recv()
-					// fmt.Printf("x: %v\n", x)
+					// time.Sleep(1 * time.Microsecond)
+					y := messageCount.Add(1)
+					if y == 1 {
+						start = time.Now()
+					}
+					// fmt.Println(string(e.Body))
+					if y == client_example.TotalReceiveCount {
+
+						z := time.Since(start)
+						fmt.Println("Execution time: ", z)
+					}
 
 					if err != nil {
 						// TODO: What if cannot receive?
@@ -64,10 +80,10 @@ func (client *Client) Subscribe(topicName string, ctx context.Context, fn func(e
 						panic(err)
 
 					}
-
+					fmt.Println("recevied from: ", x)
 					go func() {
 						for _, v := range bulkEvent.EventList {
-							fmt.Println("Received from stream: ", string(v.Body))
+
 							go fn(v)
 						}
 					}()

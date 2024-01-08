@@ -26,11 +26,6 @@ var messageCount = atomic.Uint64{}
 var start time.Time
 
 func main() {
-	id, _ := uuid.NewUUID()
-	c, err := client.NewClient(id, ADDR)
-	if err != nil {
-		logger.Error("Err", zap.Error(err))
-	}
 
 	logger.Info("Published Event")
 	var z time.Duration
@@ -38,28 +33,39 @@ func main() {
 	wg.Add(client_example.PublisherCount)
 	client_example.StartTime = time.Now()
 	fmt.Println(client_example.StartTime)
+
+	signal := make(chan struct{})
 	for i := 0; i < client_example.PublisherCount; i++ {
-		go func(w *sync.WaitGroup) {
+		id, _ := uuid.NewUUID()
+		c, err := client.NewClient(id, ADDR)
+		if err != nil {
+			logger.Error("Err", zap.Error(err))
+		}
+
+		go func(w *sync.WaitGroup, ch chan struct{}, cl *client.Client) {
 			for j := 0; j < client_example.PublishCount; j++ {
+				<-ch
 				x := messageCount.Add(1)
 				if x == 1 {
 					start = time.Now()
 				}
-				if err := c.Publish(TopicName, []byte(strconv.FormatUint(x, 10)), context.Background()); err != nil {
+
+				if err := cl.Publish(TopicName, []byte(strconv.FormatUint(x, 10)), context.Background()); err != nil {
 					logger.Error("Err", zap.Error(err))
+					panic(err)
 				}
 
 				fmt.Println(x)
 				if x == client_example.TotalPublishCount {
 					z = time.Since(start)
 				}
-				// fmt.Println(strconv.FormatUint(x, 10))
-				time.Sleep(time.Millisecond)
 			}
 			w.Done()
-		}(&wg)
+		}(&wg, signal, c)
 	}
 
+	time.Sleep(1 * time.Second)
+	close(signal)
 	wg.Wait()
 	fmt.Println("Execution time: ", z)
 

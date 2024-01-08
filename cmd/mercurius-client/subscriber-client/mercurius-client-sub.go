@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"sync/atomic"
 	"time"
 
@@ -49,11 +48,6 @@ func handler(e *proto.Event) error {
 		start = time.Now()
 	}
 	// fmt.Println(string(e.Body))
-	if x == client_example.TotalReceiveCount {
-		fmt.Println(client_example.StartTime)
-		z := time.Since(client_example.StartTime)
-		fmt.Println("Execution time: ", z)
-		ch <- struct{}{}
-	}
+
 	return nil
 }

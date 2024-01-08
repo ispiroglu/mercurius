@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/ispiroglu/mercurius/internal/logger"
 	sv "github.com/ispiroglu/mercurius/internal/server"
@@ -29,7 +30,9 @@ func main() {
 	}
 	log.Info("Listening on: " + ADDR)
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+	// grpc.MaxConcurrentStreams(500 * 1000),
+	)
 	server := sv.NewMercuriusServer()
 
 	proto.RegisterMercuriusServer(grpcServer, server)

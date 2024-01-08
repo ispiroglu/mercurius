@@ -6,8 +6,6 @@ import (
 	"github.com/ispiroglu/mercurius/internal/logger"
 	pb "github.com/ispiroglu/mercurius/proto"
 	"go.uber.org/zap"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type Broker struct {
@@ -30,8 +28,7 @@ func (b *Broker) Publish(event *pb.Event) (*pb.ACK, error) {
 		return nil, err
 	}
 
-	go t.PublishEvent(event)
-
+	t.PublishEvent(event)
 	return &pb.ACK{}, nil
 }
 
@@ -58,18 +55,11 @@ func (b *Broker) Subscribe(ctx context.Context, topicName string, sId string, sN
 }
 
 func (b *Broker) findOrInsertTopic(topicName string) (*Topic, error) {
-	t, err := b.GetTopic(topicName)
-	if err != nil {
-		t, err = b.CreateTopic(topicName)
-		if err != nil {
-			st, ok := status.FromError(err)
-			if !ok && st.Code() != codes.AlreadyExists {
-				return nil, err
-			} else if st.Code() == codes.AlreadyExists {
-				t, _ = b.GetTopic(topicName)
-			}
-		}
+	if topic, ok := b.TopicRepository.Topics.Load(topicName); ok {
+		return topic.(*Topic), nil
 	}
 
+	t := newTopic(topicName)
+	b.TopicRepository.Topics.Store(topicName, t)
 	return t, nil
 }

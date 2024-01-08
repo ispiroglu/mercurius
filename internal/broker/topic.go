@@ -4,11 +4,8 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"sync/atomic"
-	"time"
 
 	"github.com/alitto/pond"
-	client_example "github.com/ispiroglu/mercurius/cmd/mercurius-client"
 	"github.com/ispiroglu/mercurius/internal/logger"
 	"github.com/ispiroglu/mercurius/proto"
 
@@ -26,32 +23,20 @@ type Topic struct {
 	workerPool           *pond.WorkerPool
 }
 
-var publish = atomic.Uint64{}
-var start time.Time
-
 func (t *Topic) PublishEvent(event *proto.Event) {
 	if t.SubscriberRepository.poolCount.Load() == 0 {
 		t.EventChan <- event
 	} else {
-		c := publish.Add(1)
-
-		if c == uint64(1) {
-			start = time.Now()
-		}
-
-		if publish.Load() == client_example.TotalPublishCount {
-			// 	fmt.Println("Total Routing Time: ", time.Since(start))
-		}
 
 		t.SubscriberRepository.StreamPools.Range(func(k any, v interface{}) bool {
-			v.(*StreamPool).Ch <- event
+			c := *v.(*StreamPool).Ch
+			c <- event
 			return true
 		})
 	}
 }
 
 func (t *Topic) AddSubscriber(ctx context.Context, id string, name string) (*Subscriber, error) {
-
 	s, err := t.SubscriberRepository.addSubscriber(ctx, id, name, t.Name)
 
 	if err != nil {
@@ -70,17 +55,16 @@ func (t *Topic) sendBufferedEvents(subName string) {
 		if !ok {
 			panic("Subscriber not found")
 		}
-		s.(*StreamPool).Ch <- event
+		*s.(*StreamPool).Ch <- event
 	}
 }
 
 func newTopic(name string) *Topic {
-
 	return &Topic{
 		logger:               logger.NewLogger(),
 		Name:                 name,
 		SubscriberRepository: NewSubscriberRepository(),
 		EventChan:            make(chan *proto.Event), // If channel is full, there will be waiting goroutines.
-		workerPool:           pond.New(50, 100, pond.Strategy(pond.Eager()), pond.IdleTimeout(10*time.Millisecond)),
+		workerPool:           nil,
 	}
 }

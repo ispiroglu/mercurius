@@ -1,9 +1,10 @@
 package client
 
 import (
+	"sync"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"sync"
 )
 
 var (

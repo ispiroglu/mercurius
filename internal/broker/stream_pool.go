@@ -1,24 +1,26 @@
 package broker
 
 import (
-	"github.com/ispiroglu/mercurius/proto"
 	"sync"
+
+	"github.com/ispiroglu/mercurius/proto"
 )
 
 type StreamPool struct {
 	SubscriberName string
 	Streams        []*Subscriber
-	Ch             chan *proto.Event
+	Ch             *chan *proto.Event
 	chClose        chan struct{}
 	closed         bool
 	sync.Mutex
 }
 
 func newStreamPool(name string) *StreamPool {
+	ch := make(chan *proto.Event)
 	return &StreamPool{
 		SubscriberName: name,
 		Streams:        make([]*Subscriber, 0),
-		Ch:             make(chan *proto.Event, 10),
+		Ch:             &ch,
 		chClose:        make(chan struct{}),
 		closed:         false,
 		Mutex:          sync.Mutex{},
@@ -35,7 +37,7 @@ func (p *StreamPool) Delete() {
 	}
 	p.Streams = nil
 	close(p.chClose)
-	close(p.Ch)
+	close(*p.Ch)
 }
 
 // Make sure that every subscriber has added to the same stream pool
@@ -44,7 +46,7 @@ func (p *StreamPool) AddSubscriber(s *Subscriber) {
 	defer p.Unlock()
 
 	p.Streams = append(p.Streams, s)
-	go s.worker(&p.Ch, &p.chClose)
+	go s.worker(p.Ch, &p.chClose)
 }
 
 func (s *Subscriber) worker(ch *chan *proto.Event, closeCh *chan struct{}) {
@@ -52,6 +54,7 @@ func (s *Subscriber) worker(ch *chan *proto.Event, closeCh *chan struct{}) {
 		select {
 		case e := <-*ch:
 			s.EventChannel <- e
+			// time.Sleep(20 * time.Microsecond)
 		case <-*closeCh:
 			return
 		}
