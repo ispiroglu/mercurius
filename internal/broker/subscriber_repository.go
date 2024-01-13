@@ -74,3 +74,17 @@ func (r *SubscriberRepository) addSubscriber(ctx context.Context, id string, sub
 	r.poolCount.Add(1)
 	return s, nil
 }
+
+func (r *SubscriberRepository) addSub(s *Subscriber) {
+
+	var pool *StreamPool
+	if p, ok := r.StreamPools.Load(s.Name); ok {
+		pool = p.(*StreamPool)
+	} else {
+		pool = newStreamPool(s.Name)
+		r.StreamPools.Store(s.Name, pool)
+	}
+
+	pool.AddSubscriber(s)
+	r.poolCount.Add(1)
+}

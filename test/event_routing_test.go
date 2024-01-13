@@ -39,6 +39,10 @@ func (sm *SafeMap) Add(key string) {
 }
 
 var testDoneChannel = make(chan struct{})
+var testOneNChannel = make(chan struct{})
+var testNOneChannel = make(chan struct{})
+var testNNChannel = make(chan struct{})
+
 var testMapOneOne = &SafeMap{m: make(map[string]bool), Mutex: sync.Mutex{}}
 var testMapNOne = &SafeMap{m: make(map[string]bool), Mutex: sync.Mutex{}}
 var testMapOneN = &SafeMap{m: make(map[string]bool), Mutex: sync.Mutex{}}
@@ -116,7 +120,7 @@ func TestNOneMessageReliability(t *testing.T) {
 		}
 
 		close(signalChannel)
-		<-testDoneChannel
+		<-testNOneChannel
 		assert.Equal(t, true, reflect.DeepEqual(testMapNOne.m, controlMap))
 	})
 
@@ -158,7 +162,7 @@ func TestOneNMessageReliability(t *testing.T) {
 			}
 			time.Sleep(1 * time.Millisecond)
 		}
-		<-testDoneChannel
+		<-testOneNChannel
 		assert.Equal(t, true, reflect.DeepEqual(testMapOneN.m, controlMap))
 	})
 
@@ -209,7 +213,7 @@ func TestNNMessageReliability(t *testing.T) {
 		}
 		close(pubSignalChannel)
 
-		<-testDoneChannel
+		<-testNNChannel
 		assert.Equal(t, true, reflect.DeepEqual(testMapNN.m, controlMap))
 	})
 
@@ -254,17 +258,16 @@ func authenticityHandlerNOne(e *proto.Event) error {
 	testMapNOne.Add(string(e.Body))
 	messageCount := messageCountNtoOne.Add(1)
 	if messageCount == MessageCount {
-		testDoneChannel <- struct{}{}
+		testNOneChannel <- struct{}{}
 	}
 	return nil
 }
 
-// TODO: for every subscrbiber, there should be unique map
 func authenticityHandlerOneN(e *proto.Event) error {
 	testMapOneN.Add(string(e.Body))
 	messageCount := messageCountOnetoN.Add(1)
 	if messageCount == MessageCount {
-		testDoneChannel <- struct{}{}
+		testOneNChannel <- struct{}{}
 	}
 	return nil
 }
@@ -273,12 +276,12 @@ func authenticityHandlerNN(e *proto.Event) error {
 	testMapNN.Add(string(e.Body))
 	messageCount := messageCountNtoN.Add(1)
 	if messageCount == MessageCount*MessageCount {
-		testDoneChannel <- struct{}{}
+		testNNChannel <- struct{}{}
 	}
 	return nil
 }
 
-func resendHandler(e *proto.Event) error {
+func resendHandler(_ *proto.Event) error {
 
 	if !canProcess {
 		canProcess = true

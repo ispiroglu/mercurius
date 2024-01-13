@@ -2,6 +2,8 @@ package broker
 
 import (
 	"context"
+	"errors"
+	"sync"
 
 	"github.com/ispiroglu/mercurius/internal/logger"
 	pb "github.com/ispiroglu/mercurius/proto"
@@ -12,6 +14,7 @@ type Broker struct {
 	logger *zap.Logger
 	*TopicRepository
 	SubscriberRepository *SubscriberRepository
+	retriedEvents        sync.Map
 }
 
 func NewBroker() *Broker {
@@ -19,6 +22,7 @@ func NewBroker() *Broker {
 		logger:               logger.NewLogger(),
 		TopicRepository:      NewTopicRepository(),
 		SubscriberRepository: NewSubscriberRepository(),
+		retriedEvents:        sync.Map{},
 	}
 }
 
@@ -51,7 +55,45 @@ func (b *Broker) Subscribe(ctx context.Context, topicName string, sId string, sN
 		b.logger.Error("Broker could not add subscriber to topic", zap.String("Topic", topicName), zap.String("SubscriberID", sId), zap.Error(err))
 		return nil, err
 	}
+
+	b.SubscriberRepository.addSub(s)
 	return s, nil
+}
+
+func (b *Broker) Retry(_ context.Context, in *pb.RetryRequest) (*pb.ACK, error) {
+	retryCountInterface, ok := b.retriedEvents.Load(in.Event.Id)
+	retryCount := 0
+	if ok {
+		retryCount = retryCountInterface.(int)
+	}
+
+	retryCount++
+
+	if retryCount == 4 {
+		err := errors.New("exceeded retry limit")
+		b.retriedEvents.Delete(in.Event.Id)
+
+		return nil, err
+	}
+
+	streamPool, ok := b.SubscriberRepository.StreamPools.Load(in.SubscriberID)
+	if !ok {
+		return nil, errors.New("invalid retry request")
+	}
+	*streamPool.(*StreamPool).Ch <- in.Event
+
+	b.retriedEvents.Store(in.Event.Id, retryCount)
+	return &pb.ACK{}, nil
+}
+
+func (b *Broker) GetTopics() map[string]bool {
+	topics := make(map[string]bool, 0)
+	b.TopicRepository.Topics.Range(func(key, value interface{}) bool {
+		topics[key.(string)] = true
+		return true
+	})
+
+	return topics
 }
 
 func (b *Broker) findOrInsertTopic(topicName string) (*Topic, error) {

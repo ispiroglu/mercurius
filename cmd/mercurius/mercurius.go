@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -30,9 +31,7 @@ func main() {
 	}
 	log.Info("Listening on: " + ADDR)
 
-	grpcServer := grpc.NewServer(
-	// grpc.MaxConcurrentStreams(500 * 1000),
-	)
+	grpcServer := grpc.NewServer()
 	server := sv.NewMercuriusServer()
 
 	proto.RegisterMercuriusServer(grpcServer, server)
@@ -41,6 +40,17 @@ func main() {
 		http.Handle("/metrics", promhttp.Handler())
 		_ = http.ListenAndServe(":8081", nil)
 	}()
+
+	// return all the topics created in server at port 8080
+	go func() {
+		http.HandleFunc("/topics", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(server.GetTopics())
+		})
+		_ = http.ListenAndServe(":8080", nil)
+	}()
+
 	if err := grpcServer.Serve(list); err != nil {
 		log.Fatal("Failed to serve", zap.Error(err))
 	}

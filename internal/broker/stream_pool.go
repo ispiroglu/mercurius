@@ -32,9 +32,6 @@ func (p *StreamPool) Delete() {
 	defer p.Unlock()
 	p.closed = true
 	p.chClose <- struct{}{}
-	for _, s := range p.Streams {
-		close(s.EventChannel)
-	}
 	p.Streams = nil
 	close(p.chClose)
 	close(*p.Ch)

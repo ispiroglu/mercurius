@@ -83,8 +83,12 @@ func (client *Client) Subscribe(topicName string, ctx context.Context, fn func(e
 					fmt.Println("recevied from: ", x)
 					go func() {
 						for _, v := range bulkEvent.EventList {
-
-							go fn(v)
+							go func(e *proto.Event) {
+								err := fn(e)
+								if err != nil {
+									client.retry(ctx, e, r.SubscriberName) //nolint:errcheck
+								}
+							}(v)
 						}
 					}()
 				}
@@ -107,9 +111,9 @@ func (client *Client) Publish(topicName string, body []byte, ctx context.Context
 	return err
 }
 
-func (client *Client) retry(ctx context.Context, e *proto.Event, subId string) error {
+func (client *Client) retry(ctx context.Context, e *proto.Event, subName string) error {
 	r := &proto.RetryRequest{
-		SubscriberID: subId,
+		SubscriberID: subName,
 		Event:        e,
 		CreatedAt:    timestamppb.Now(),
 	}

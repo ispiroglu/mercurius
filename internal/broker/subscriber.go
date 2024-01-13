@@ -12,7 +12,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const totalEventCount = 100 * 100 * 100 * 100
 const channelSize = 1
 
 // const subscriberBulkEventCount = 100 * 100
@@ -39,7 +38,7 @@ func NewSubscriber(ctx context.Context, sId string, sName string, topicName stri
 		Id:           sId,
 		Name:         sName,
 		EventChannel: eventChannel,
-		RetryQueue:   SubscriberRetryHandler.CreateRetryQueue(sId, eventChannel),
+		RetryQueue:   SubscriberRetryHandler.CreateRetryQueue(sName, eventChannel),
 		TopicName:    topicName,
 		Ctx:          ctx,
 	}
