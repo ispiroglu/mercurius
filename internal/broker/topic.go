@@ -25,7 +25,11 @@ type Topic struct {
 
 func (t *Topic) PublishEvent(event *proto.Event) {
 	if t.SubscriberRepository.poolCount.Load() == 0 {
-		t.EventChan <- event
+		select {
+		case t.EventChan <- event:
+		default:
+			t.logger.Warn("Event channel is full, event is dropped", zap.String("Topic", t.Name), zap.String("Event", event.String()))
+		}
 	} else {
 
 		t.SubscriberRepository.StreamPools.Range(func(k any, v interface{}) bool {
