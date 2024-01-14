@@ -37,29 +37,7 @@ func (r *SubscriberRepository) Unsubscribe(subscriber *Subscriber) error {
 	return nil
 }
 
-/*
-func (r *SubscriberRepository) PublishEvent(event *proto.Event) {
-	if r.poolCount.Load() == 0 {
-		panic("No subscriber found")
-	} else {
-
-		r.StreamPools
-
-		r.StreamPools.Range(func(k any, v interface{}) bool {
-			c := *v.(*StreamPool).Ch
-			select {
-			case c <- event.Event:
-			default:
-				panic("ASDA")
-			}
-			return true
-		})
-	}
-}*/
-
 func (r *SubscriberRepository) addSubscriber(ctx context.Context, id string, subName string, topicName string) (*Subscriber, error) {
-
-	// Handle subName conflict?
 	s := NewSubscriber(ctx, id, subName, topicName)
 	var pool *StreamPool
 

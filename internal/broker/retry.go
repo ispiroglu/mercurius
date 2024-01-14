@@ -60,7 +60,6 @@ func (rh *RetryHandler) CreateRetryQueue(sName string, eq chan *proto.Event) cha
 	return rq
 }
 
-// TODO remove entry from map
 func (rh *RetryHandler) HandleRetryQueue(rq chan *proto.Event, eq chan *proto.Event) {
 
 	eventRetryCount := make(map[string]int)

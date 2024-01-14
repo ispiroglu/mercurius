@@ -41,7 +41,6 @@ func main() {
 		_ = http.ListenAndServe(":8081", nil)
 	}()
 
-	// return all the topics created in server at port 8080
 	go func() {
 		http.HandleFunc("/topics", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
