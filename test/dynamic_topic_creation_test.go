@@ -40,7 +40,6 @@ func TestDynamicTopicCreation(t *testing.T) {
 		close(signalChannel)
 		time.Sleep(2 * time.Second)
 
-		// Send request to localhost:8080/topics to get all the topics created in server
 		topics := GetAllTopics()
 
 		assert.Equal(t, true, reflect.DeepEqual(topics, controlMap))

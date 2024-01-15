@@ -27,7 +27,6 @@ type EventHandler func(event *proto.Event) error
 
 var l = logger.NewLogger()
 
-// Where to locate defer conn.Close()
 func NewClient(id uuid.UUID, addr string) (*Client, error) {
 	conn := getConnection(addr)
 	if conn == nil {
@@ -137,11 +136,6 @@ func (client *Client) createSubRequest(topicName string, x int) *proto.Subscribe
 }
 
 func (client *Client) createEvent(topicName string, body []byte) (*proto.Event, error) {
-	//b, err := client.s.Encode(body)
-	//if err != nil {
-	//	l.Error("error while encoding the event", zap.Any("Event", body), zap.Error(err))
-	//	return nil, errors.New("error while encoding the event")
-	//}
 	e := proto.Event{
 		Id:        uuid.NewString(),
 		Topic:     topicName,
