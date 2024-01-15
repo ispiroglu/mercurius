@@ -2,7 +2,6 @@ package broker
 
 import (
 	"context"
-	"fmt"
 	"sync/atomic"
 	"time"
 
@@ -77,7 +76,7 @@ func checkSentEventCount() {
 		_start = time.Now()
 	}
 	if eventCount == client_example.TotalReceiveCount {
-		z := time.Since(_start)
-		fmt.Println("Total stream send time: ", z)
+		_ = time.Since(_start)
+		// fmt.Println("Total stream send time: ", z)
 	}
 }

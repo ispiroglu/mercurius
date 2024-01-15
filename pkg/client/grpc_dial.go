@@ -1,15 +1,8 @@
 package client
 
 import (
-	"sync"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-)
-
-var (
-	conn *grpc.ClientConn
-	o    sync.Once
 )
 
 func getConnection(addr string) *grpc.ClientConn {

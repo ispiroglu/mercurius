@@ -50,6 +50,7 @@ var start time.Time
 func (client *Client) Subscribe(topicName string, ctx context.Context, fn func(event *proto.Event) error) error {
 
 	for i := 0; i < client_example.StreamPerSubscriber; i++ {
+		time.Sleep(1 * time.Millisecond)
 		go func(x int) {
 			r := client.createSubRequest(topicName, x)
 			subStream, err := client.c.Subscribe(ctx, r)
@@ -69,15 +70,13 @@ func (client *Client) Subscribe(topicName string, ctx context.Context, fn func(e
 					// fmt.Println(string(e.Body))
 					if y == client_example.TotalReceiveCount {
 
-						z := time.Since(start)
-						fmt.Println("Execution time: ", z)
+						_ = time.Since(start)
+						// fmt.Println("Execution time: ", z)
 					}
 
 					if err != nil {
-						// TODO: What if cannot receive?
 						l.Error("", zap.Error(err))
 						panic(err)
-
 					}
 					fmt.Println("recevied from: ", x)
 					go func() {
@@ -141,7 +140,7 @@ func (client *Client) createEvent(topicName string, body []byte) (*proto.Event, 
 		Topic:     topicName,
 		Body:      body,
 		CreatedAt: timestamppb.Now(),
-		ExpiresAt: 0, // TODO:
+		ExpiresAt: 0,
 	}
 
 	return &e, nil

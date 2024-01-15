@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"sync/atomic"
 	"time"
 
@@ -47,7 +48,7 @@ func handler(e *proto.Event) error {
 	if x == 1 {
 		start = time.Now()
 	}
-	// fmt.Println(string(e.Body))
+	fmt.Println("event received: ", string(e.Body))
 
 	return nil
 }

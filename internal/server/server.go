@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"sync/atomic"
 	"time"
 
@@ -66,7 +65,7 @@ func checkPublishEventCount() {
 	}
 
 	if eventCount.Load() == client_example.TotalPublishCount {
-		elapsedTime := time.Since(startTime)
-		fmt.Println("Elapsed time since the start of events:", elapsedTime)
+		_ = time.Since(startTime)
+		// fmt.Println("Elapsed time since the start of events:", elapsedTime)
 	}
 }

@@ -29,6 +29,7 @@ func main() {
 
 	logger.Info("Published Event")
 	var z time.Duration
+	_ = z
 	wg := sync.WaitGroup{}
 	wg.Add(client_example.PublisherCount)
 	client_example.StartTime = time.Now()
@@ -55,7 +56,7 @@ func main() {
 					panic(err)
 				}
 
-				fmt.Println(x)
+				fmt.Println("event sent: ", x)
 				if x == client_example.TotalPublishCount {
 					z = time.Since(start)
 				}
@@ -67,7 +68,7 @@ func main() {
 	time.Sleep(1 * time.Second)
 	close(signal)
 	wg.Wait()
-	fmt.Println("Execution time: ", z)
+	// fmt.Println("Execution time: ", z)
 
 }
 

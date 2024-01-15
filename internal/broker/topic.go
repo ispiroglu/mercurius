@@ -49,18 +49,7 @@ func (t *Topic) AddSubscriber(ctx context.Context, id string, name string) (*Sub
 		return nil, status.Error(codes.AlreadyExists, errorMessage)
 	}
 
-	//t.sendBufferedEvents(name)
 	return s, nil
-}
-
-func (t *Topic) sendBufferedEvents(subName string) {
-	for event := range t.EventChan {
-		s, ok := t.SubscriberRepository.StreamPools.Load(subName)
-		if !ok {
-			panic("Subscriber not found")
-		}
-		*s.(*StreamPool).Ch <- event
-	}
 }
 
 func newTopic(name string) *Topic {
