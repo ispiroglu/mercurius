@@ -65,8 +65,8 @@ func (s *Subscriber) HandleBulkEvent(stream *proto.Mercurius_SubscribeServer) er
 
 func (s *Subscriber) sendEvent(bulkEvent *proto.BulkEvent, stream *proto.Mercurius_SubscribeServer) {
 	if err := (*stream).Send(bulkEvent); err != nil {
-		// s.logger.Error("Error on sending event", zap.String("Error: ", err.Error()), zap.String("SubscriberID", s.Id), zap.String("Subscriber Name", s.Name)) //, zap.Error(err))
-		// sub.RetryQueue <- event
+		s.logger.Error("Error on sending event", zap.String("Error: ", err.Error()), zap.String("SubscriberID", s.Id), zap.String("Subscriber Name", s.Name)) //, zap.Error(err))
+		// s.RetryQueue <- event.Event
 	}
 }
 

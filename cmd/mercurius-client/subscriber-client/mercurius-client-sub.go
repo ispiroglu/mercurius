@@ -40,6 +40,7 @@ func main() {
 
 	}
 
+	fmt.Println("total time", time.Since(start))
 	<-ch
 }
 

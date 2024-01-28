@@ -1,6 +1,6 @@
 module kafka-test
 
-go 1.21.5
+go 1.21
 
 require (
 	github.com/klauspost/compress v1.15.9 // indirect

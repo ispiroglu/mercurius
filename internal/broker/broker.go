@@ -39,7 +39,7 @@ func (b *Broker) Publish(event *pb.Event) (*pb.ACK, error) {
 func (b *Broker) Unsubscribe(sub *Subscriber) {
 	b.TopicRepository.Unsubscribe(sub)
 	if err := b.SubscriberRepository.Unsubscribe(sub); err != nil {
-		// b.logger.Warn("Failed to unsubscribe subscriber", zap.String("SubscriberID", sub.Id), zap.String("Subscriber Name", sub.Name), zap.Error(err))
+		b.logger.Warn("Failed to unsubscribe subscriber", zap.String("SubscriberID", sub.Id), zap.String("Subscriber Name", sub.Name), zap.Error(err))
 	}
 }
 

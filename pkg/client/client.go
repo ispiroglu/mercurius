@@ -124,7 +124,7 @@ func (client *Client) retry(ctx context.Context, e *proto.Event, subName string)
 }
 
 func (client *Client) createSubRequest(topicName string, x int) *proto.SubscribeRequest {
-	subName := fmt.Sprintf("%s", client.id)
+	subName := fmt.Sprint(client.id)
 	fmt.Println(subName)
 	return &proto.SubscribeRequest{
 		SubscriberID:   fmt.Sprintf("%d", x),
