@@ -2,35 +2,35 @@ package broker
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"sync/atomic"
 
 	"github.com/ispiroglu/mercurius/internal/logger"
 	"go.uber.org/zap"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type SubscriberRepository struct {
 	logger      *zap.Logger
-	StreamPools sync.Map
+	StreamPools *sync.Map
 	poolCount   atomic.Uint32
 }
 
 func NewSubscriberRepository() *SubscriberRepository {
 	return &SubscriberRepository{
 		logger:      logger.NewLogger(),
-		StreamPools: sync.Map{},
+		StreamPools: &sync.Map{},
 	}
 }
 
 func (r *SubscriberRepository) Unsubscribe(subscriber *Subscriber) error {
-
-	if _, ok := r.StreamPools.Load(subscriber.Id); !ok {
-		return status.Error(codes.NotFound, "Cannot found subscriber at repository.")
+	val, ok := r.StreamPools.LoadAndDelete(subscriber.Name)
+	if !ok {
+		return fmt.Errorf("subscriber not found")
 	}
 
-	r.StreamPools.Delete(subscriber.Id)
+	val.(*StreamPool).Delete()
+
 	r.poolCount.Store(
 		r.poolCount.Load() - 1,
 	)
@@ -38,12 +38,31 @@ func (r *SubscriberRepository) Unsubscribe(subscriber *Subscriber) error {
 }
 
 func (r *SubscriberRepository) addSubscriber(ctx context.Context, id string, subName string, topicName string) (*Subscriber, error) {
-
-	// Handle subName conflict?
 	s := NewSubscriber(ctx, id, subName, topicName)
-	pool, _ := r.StreamPools.LoadOrStore(subName, newStreamPool(subName))
+	var pool *StreamPool
 
-	pool.(*StreamPool).AddSubscriber(s)
+	if p, ok := r.StreamPools.Load(subName); ok {
+		pool = p.(*StreamPool)
+	} else {
+		pool = newStreamPool(subName)
+		r.StreamPools.Store(subName, pool)
+	}
+
+	pool.AddSubscriber(s)
 	r.poolCount.Add(1)
 	return s, nil
+}
+
+func (r *SubscriberRepository) addSub(s *Subscriber) {
+
+	var pool *StreamPool
+	if p, ok := r.StreamPools.Load(s.Name); ok {
+		pool = p.(*StreamPool)
+	} else {
+		pool = newStreamPool(s.Name)
+		r.StreamPools.Store(s.Name, pool)
+	}
+
+	pool.AddSubscriber(s)
+	r.poolCount.Add(1)
 }

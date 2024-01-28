@@ -1,0 +1,19 @@
+services:
+  server:
+    build:
+      context: .
+      target: final
+    ports:
+      - 9000:9000
+      - 6060:6060
+      - 8081:8081
+      - 8080:8080
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - 9090:9090
+    command:
+      - --web.enable-remote-write-receiver
+      - --enable-feature=exemplar-storage
+    volumes:
+      - ./prometheus/prometheus.yml:/prometheus/prometheus.yml

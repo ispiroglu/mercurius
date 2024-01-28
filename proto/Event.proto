@@ -3,11 +3,6 @@ package proto;
 import "google/protobuf/timestamp.proto";
 option go_package = "/proto";
 
-
-//message EventHeader {
-//  string topic_name = 1;
-//}
-
 message Event {
   string id = 1;
   string topic = 2;

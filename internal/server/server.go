@@ -2,10 +2,10 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"sync/atomic"
 	"time"
 
+	client_example "github.com/ispiroglu/mercurius/cmd/mercurius-client"
 	"github.com/ispiroglu/mercurius/internal/broker"
 	"github.com/ispiroglu/mercurius/internal/logger"
 	"github.com/ispiroglu/mercurius/proto"
@@ -42,8 +42,21 @@ func (s *Server) Subscribe(req *proto.SubscribeRequest, stream proto.Mercurius_S
 		return err
 	}
 
-	err = sub.HandleBulkEvent(stream)
+	err = sub.HandleBulkEvent(&stream)
+	if err != nil {
+		s.logger.Error("", zap.Error(err))
+	}
+
+	s.broker.Unsubscribe(sub)
 	return err
+}
+
+func (s *Server) Retry(ctx context.Context, in *proto.RetryRequest) (*proto.ACK, error) {
+	return s.broker.Retry(ctx, in)
+}
+
+func (s *Server) GetTopics() map[string]bool {
+	return s.broker.GetTopics()
 }
 
 func checkPublishEventCount() {
@@ -51,8 +64,8 @@ func checkPublishEventCount() {
 		startTime = time.Now()
 	}
 
-	if eventCount.Load() == uint64(100*100) {
-		elapsedTime := time.Since(startTime)
-		fmt.Println("Elapsed time since the start of events:", elapsedTime)
+	if eventCount.Load() == client_example.TotalPublishCount {
+		_ = time.Since(startTime)
+		// fmt.Println("Elapsed time since the start of events:", elapsedTime)
 	}
 }

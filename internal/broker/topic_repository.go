@@ -11,13 +11,13 @@ import (
 
 type TopicRepository struct {
 	logger *zap.Logger
-	Topics sync.Map
+	Topics *sync.Map
 }
 
 func NewTopicRepository() *TopicRepository {
 	return &TopicRepository{
 		logger: logger.NewLogger(),
-		Topics: sync.Map{},
+		Topics: &sync.Map{},
 	}
 }
 
@@ -50,6 +50,6 @@ func (r *TopicRepository) Unsubscribe(subscriber *Subscriber) {
 	}
 
 	if err := topic.SubscriberRepository.Unsubscribe(subscriber); err != nil {
-		r.logger.Warn("", zap.Error(err))
+		// r.logger.Warn("", zap.Error(err))
 	}
 }

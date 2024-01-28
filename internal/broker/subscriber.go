@@ -2,16 +2,15 @@ package broker
 
 import (
 	"context"
-	"fmt"
 	"sync/atomic"
 	"time"
 
+	client_example "github.com/ispiroglu/mercurius/cmd/mercurius-client"
 	"github.com/ispiroglu/mercurius/internal/logger"
 	"github.com/ispiroglu/mercurius/proto"
 	"go.uber.org/zap"
 )
 
-const totalEventCount = 100 * 100 * 100
 const channelSize = 1
 
 // const subscriberBulkEventCount = 100 * 100
@@ -38,13 +37,13 @@ func NewSubscriber(ctx context.Context, sId string, sName string, topicName stri
 		Id:           sId,
 		Name:         sName,
 		EventChannel: eventChannel,
-		RetryQueue:   SubscriberRetryHandler.CreateRetryQueue(sId, eventChannel),
+		RetryQueue:   SubscriberRetryHandler.CreateRetryQueue(sName, eventChannel),
 		TopicName:    topicName,
 		Ctx:          ctx,
 	}
 }
 
-func (s *Subscriber) HandleBulkEvent(stream proto.Mercurius_SubscribeServer) error {
+func (s *Subscriber) HandleBulkEvent(stream *proto.Mercurius_SubscribeServer) error {
 	eventBuffer := make([]*proto.Event, 0, subscriberBulkEventCount)
 	for {
 		select {
@@ -64,20 +63,20 @@ func (s *Subscriber) HandleBulkEvent(stream proto.Mercurius_SubscribeServer) err
 	}
 }
 
-func (s *Subscriber) sendEvent(bulkEvent *proto.BulkEvent, stream proto.Mercurius_SubscribeServer) {
-	if err := stream.Send(bulkEvent); err != nil {
-		s.logger.Error("Error on sending event", zap.String("Error: ", err.Error()), zap.String("SubscriberID", s.Id), zap.String("Subscriber Name", s.Name)) //, zap.Error(err))
+func (s *Subscriber) sendEvent(bulkEvent *proto.BulkEvent, stream *proto.Mercurius_SubscribeServer) {
+	if err := (*stream).Send(bulkEvent); err != nil {
+		// s.logger.Error("Error on sending event", zap.String("Error: ", err.Error()), zap.String("SubscriberID", s.Id), zap.String("Subscriber Name", s.Name)) //, zap.Error(err))
 		// sub.RetryQueue <- event
 	}
 }
 
 func checkSentEventCount() {
-	x := messageCount.Add(1)
-	if x == 1 {
+	eventCount := messageCount.Add(1)
+	if eventCount == 1 {
 		_start = time.Now()
 	}
-	if x == totalEventCount {
-		z := time.Since(_start)
-		fmt.Println("Total stream send time: ", z)
+	if eventCount == client_example.TotalReceiveCount {
+		_ = time.Since(_start)
+		// fmt.Println("Total stream send time: ", z)
 	}
 }

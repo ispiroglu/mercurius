@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
+	client_example "github.com/ispiroglu/mercurius/cmd/mercurius-client"
 	k "github.com/ispiroglu/mercurius/internal/logger"
 	"github.com/ispiroglu/mercurius/pkg/client"
 	"github.com/ispiroglu/mercurius/proto"
@@ -16,9 +17,6 @@ import (
 
 const ADDR = "0.0.0.0:9000"
 const TopicName = "one-to-one"
-const CLIENT_NAME = "Sample Client"
-const subCount = 100
-const N = 100 * 100 * subCount
 
 var messageCount = atomic.Uint64{}
 var start = time.Time{}
@@ -28,7 +26,7 @@ var ch = make(chan struct{})
 
 func main() {
 
-	for i := 0; i < subCount; i++ {
+	for i := 0; i < client_example.SubscriberCount; i++ {
 		go func() {
 			id, _ := uuid.NewUUID()
 			c, err := client.NewClient(id, ADDR)
@@ -50,11 +48,7 @@ func handler(e *proto.Event) error {
 	if x == 1 {
 		start = time.Now()
 	}
-	// fmt.Println(string(e.Body))
-	if x == N {
-		z := time.Since(start)
-		fmt.Println("Execution time: ", z)
-		ch <- struct{}{}
-	}
+	fmt.Println("event received: ", string(e.Body))
+
 	return nil
 }
