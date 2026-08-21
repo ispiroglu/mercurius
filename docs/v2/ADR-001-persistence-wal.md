@@ -12,10 +12,12 @@ v1'de `Broker{TopicRepository, retriedEvents sync.Map}` tamamen in-memory — re
 ## Port
 
 - **Port Interface:** `internal/port/wal.go: WAL` — one interface, one file location (future `internal/port/wal.go`)
-- **Signature:** `type WAL interface { Append(topic string, e Event) (Offset uint64, error); Read(topic string, from Offset, limit int) ([]Event, error); Replay(topic string) (<-chan Event, error); Sync() error; Close() error }`
+- **Signature:** `type WAL interface { Append(topic string, e Event) (Offset uint64, error); Read(topic string, from Offset, limit int) ([]Event, error); Replay(topic string) iter.Seq2[Event, error]; Sync() error; Close() error }` — `Replay` push-channel değil pull iterator (`iter.Seq2`, Go 1.23+; hedef Go 1.27): aynı goroutine'de zero-copy akış, caller `break` edince `yield` false döner; CRC bozuk record'da `(Event{}, ErrCorrupt)` yield edilip stream sonlanır.
 - **Scope:**
-  - Owns: segment file layout, CRC, fsync, append/replay/sync lifecycle
-  - NOT owns: index/cache (ayrı port), consensus/quorum (ADR-002 `Consensus` port)
+  - Owns: segment file layout, per-record CRC + truncate-to-last-valid recovery (torn write'ta son geçerli offset'e geri sar), fsync lifecycle
+  - Owns: buffer lifecycle — `Append` çağıran taraf `Sync` onayından sonra veriyi unutabilir; adapter buffer'ı kendi havuzunda (`sync.Pool`/arena) yönetir
+  - Adapter-internal: reactive flush pipeline (Pebble WriteQueue tarzı — producer'lar kuyruğa teslim eder, tek flusher coalescing ile TEK write+fsync, bekleyenlere sync callback); arena/buffer reuse implementasyon detayıdır, port'a sızmaz
+  - NOT owns: index/cache (ayrı port), consensus/quorum (ADR-002 `Consensus` port), batch/sync politika knob'ları (ConfigSource ADR-012)
 - **Adapters:** Pebble LSM, BadgerDB, RocksDB/grocksdb, Kafka segment klonu, from-scratch file+CRC+fsync
 
 ## Alternatifler
