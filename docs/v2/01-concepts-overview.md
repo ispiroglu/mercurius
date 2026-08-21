@@ -13,9 +13,9 @@
 | `Topic.PublishEvent` (`topic.go:26`) | `poolCount==0` ise `select/default` drop | Mesaj kaybı sessiz |
 | `Topic.workerPool` (`topic.go:23`) | `nil` | `pond` import edilmiş ama kullanılmıyor |
 | `StreamPool.Ch` (`stream_pool.go:19`) | `make(chan Event)` unbuffered | 1 yavaş consumer tüm publish'i bloklar |
-| `Subscriber.EventChannel` (`subscriber.go:34`) | `cap 1` | Backpressure yok |
-| `BulkEvent` (`subscriber.go:17`) | `subscriberBulkEventCount=1` | Batching yok, her mesaj 1 gRPC frame |
-| `Retry` (`broker.go:63` + `retry.go:64`) | İki ayrı mekanizma, `-1/-2` sentinel, `map[string]int` race | Yarım, test edilemez |
+| `Subscriber.EventChannel` (`subscriber.go:34)` | `cap 1` | Backpressure yok |
+| `BulkEvent` (`subscriber.go:17)` | `subscriberBulkEventCount=1` | Batching yok, her mesaj 1 gRPC frame |
+| `Retry` (`broker.go:63` + `retry.go:64)` | İki ayrı mekanizma, `-1/-2` sentinel, `map[string]int` race | Yarım, test edilemez |
 | `SubscriberRepository` | Global + per-topic iki instance, key=`SubscriberName` | Aynı name farklı topic'te collision |
 
 **Sonuç:** v1 bir PoC. v2'de **hiçbir kod taşınmayacak** — sadece konseptler referans.
@@ -33,14 +33,16 @@ Subscribe Path: Client.Subscribe -> gRPC stream -> Replay (WAL) -> Live tail -> 
 Stretch:        DC-1 WAL tailer -> Gateway -> gRPC -> DC-2 ingest -> kendi WAL'ına yaz
 ```
 
-| Katman | Kavramlar | Doküman |
-|--------|-----------|---------|
-| **Persistence** | WAL, LSM, SSTable, MemTable, fsync, segment, compaction, snapshot, recovery | `02-persistence.md` |
-| **Consensus** | Raft/Paxos, quorum, leader election, log replication, membership | `03-consensus-replication.md` |
-| **Stretch** | Active-passive, async replication, conflict, vector clock, gateway | `04-stretch-multi-dc.md` |
-| **Operability** | Helm, StatefulSet, PVC, PDB, operator, config, TLS, upgrade | `05-operability.md` |
-| **Delivery** | At-least-once, exactly-once, idempotency, ordering, DLQ, consumer group, backpressure | `06-delivery-guarantees.md` |
-| **Testing** | Unit, integration (testcontainers), contract (buf), e2e (kind), bench (ghz/k6), chaos (toxiproxy) | `07-testing-strategy.md` (sonra) |
+| Katman | Kavramlar | Doküman | Port |
+|--------|-----------|---------|------|
+| **Persistence** | WAL, LSM, SSTable, MemTable, fsync, segment, compaction, snapshot, recovery | `02-persistence.md` | WAL (ADR-001) |
+| **Consensus** | Raft/Paxos, quorum, leader election, log replication, membership | `03-consensus-replication.md` | Consensus (ADR-002) / Replicator (ADR-003) |
+| **Stretch** | Active-passive, async replication, conflict, vector clock, gateway | `04-stretch-multi-dc.md` | StretchGateway (ADR-004) |
+| **Operability** | Helm, StatefulSet, PVC, PDB, operator, config, TLS, upgrade | `05-operability.md` | ConfigSource (ADR-012) / Metrics (ADR-013) |
+| **Delivery** | At-least-once, exactly-once, idempotency, ordering, DLQ, consumer group, backpressure | `06-delivery-guarantees.md` | DeliveryGuarantee (ADR-008) / ConsumerGroup (ADR-009) / ConsumeTracker (ADR-010) |
+| **Testing** | Unit, integration (testcontainers), contract (buf), e2e (kind), bench (ghz/k6), chaos (toxiproxy) | `07-testing-strategy.md` (sonra) | TestCluster (ADR-014) |
+| **Security** | mTLS, ACL, JWT | `05-operability.md` | Authenticator (ADR-011) |
+| **Wire/Transport** | protobuf, gRPC | `03-consensus-replication.md` | Codec (ADR-005) / Transport (ADR-006) |
 
 ## From-Scratch İlkesi — Ne Demek?
 
